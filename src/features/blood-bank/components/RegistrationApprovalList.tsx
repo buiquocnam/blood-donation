@@ -3,9 +3,16 @@
 import { useState, useEffect } from 'react';
 import { format } from 'date-fns';
 import { vi } from 'date-fns/locale';
+import { CheckCircle, XCircle } from 'lucide-react';
+
+// Types
+import type { RegistrationRequest } from '../types';
+
+// Hooks và services
 import { useOrganizationRequests } from '../hooks/useOrganizationRequests';
 import { mockRegistrationRequests } from '../mock/data';
-import type { RegistrationRequest } from '../types';
+
+// UI Components
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -15,23 +22,23 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { PaginationProps, Pagination } from '@/components/ui/pagination';
 import { DateTimePicker } from '@/components/ui/date-time-picker';
 import { Label } from '@/components/ui/label';
-import { CheckCircle, XCircle } from 'lucide-react';
 
-// Kiểu màu cho badge trạng thái
-const statusBadgeVariant: Record<string, 'default' | 'success' | 'destructive'> = {
+// Constants
+const STATUS_BADGE_VARIANT: Record<string, 'default' | 'success' | 'destructive'> = {
   pending: 'default',
   approved: 'success',
   rejected: 'destructive',
 };
 
-// Dịch trạng thái sang tiếng Việt
-const statusTranslation: Record<string, string> = {
+const STATUS_TRANSLATION: Record<string, string> = {
   pending: 'Chờ duyệt',
   approved: 'Đã duyệt',
   rejected: 'Từ chối',
 };
 
-// Form tạo sự kiện
+const ITEMS_PER_PAGE = 5;
+
+// Interfaces
 interface EventFormValues {
   TgBatDauSK: string;
   TgKetThucSK: string;
@@ -42,14 +49,18 @@ interface RegistrationApprovalListProps {
   notificationId?: string;
 }
 
-// Component hiển thị trạng thái
+/**
+ * Component hiển thị trạng thái của đăng ký
+ */
 const RequestStatus = ({ status }: { status: string }) => (
-  <Badge variant={statusBadgeVariant[status || 'pending']}>
-    {statusTranslation[status || 'pending']}
+  <Badge variant={STATUS_BADGE_VARIANT[status || 'pending']}>
+    {STATUS_TRANSLATION[status || 'pending']}
   </Badge>
 );
 
-// Component phân trang
+/**
+ * Component phân trang cho bảng
+ */
 const TablePagination = ({ 
   currentPage, 
   totalPages, 
@@ -72,7 +83,9 @@ const TablePagination = ({
   );
 };
 
-// Component hiển thị hộp thoại từ chối đăng ký
+/**
+ * Component hiển thị hộp thoại từ chối đăng ký
+ */
 const RejectDialog = ({ 
   open, 
   onOpenChange, 
@@ -118,7 +131,9 @@ const RejectDialog = ({
   </Dialog>
 );
 
-// Component hiển thị hộp thoại tạo sự kiện
+/**
+ * Component hiển thị hộp thoại tạo sự kiện
+ */
 const CreateEventDialog = ({ 
   open, 
   onOpenChange, 
@@ -197,8 +212,11 @@ const CreateEventDialog = ({
   </Dialog>
 );
 
-// Component chính
+/**
+ * Component chính hiển thị danh sách đăng ký cần phê duyệt
+ */
 export function RegistrationApprovalList({ notificationId }: RegistrationApprovalListProps) {
+  // Hooks và state
   const { 
     pendingRequests, 
     isPendingLoading, 
@@ -227,7 +245,7 @@ export function RegistrationApprovalList({ notificationId }: RegistrationApprova
   const [notificationRequests, setNotificationRequests] = useState<RegistrationRequest[]>([]);
   const [isNotificationRequestsLoading, setIsNotificationRequestsLoading] = useState(false);
   
-  // Lấy danh sách đăng ký khi notificationId thay đổi
+  // Tải dữ liệu khi notificationId thay đổi
   useEffect(() => {
     const fetchNotificationRequests = async () => {
       if (!notificationId) return;
@@ -249,7 +267,7 @@ export function RegistrationApprovalList({ notificationId }: RegistrationApprova
     setCurrentPage(1);
   }, [notificationId]);
 
-  // Lấy dữ liệu phù hợp dựa vào notificationId
+  // Các hàm xử lý dữ liệu
   const getDisplayRequests = (): RegistrationRequest[] => {
     if (notificationId) {
       return notificationRequests;
@@ -261,15 +279,14 @@ export function RegistrationApprovalList({ notificationId }: RegistrationApprova
   // Chuẩn bị dữ liệu hiển thị
   const displayRequests = getDisplayRequests();
   const isLoading = (notificationId ? isNotificationRequestsLoading : isPendingLoading) && !displayRequests.length;
-  const itemsPerPage = 5;
   const totalRequests = displayRequests.length;
-  const totalPages = Math.ceil(totalRequests / itemsPerPage);
+  const totalPages = Math.ceil(totalRequests / ITEMS_PER_PAGE);
   const paginatedRequests = displayRequests.slice(
-    (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage
+    (currentPage - 1) * ITEMS_PER_PAGE,
+    currentPage * ITEMS_PER_PAGE
   );
 
-  // Các hàm xử lý sự kiện
+  // Event handlers
   const handleApprove = async (request: RegistrationRequest) => {
     try {
       await approveRequest.mutateAsync(request.IdDangKiTC);
@@ -333,12 +350,12 @@ export function RegistrationApprovalList({ notificationId }: RegistrationApprova
     setCurrentPage(page);
   };
 
-  // Hiển thị trạng thái loading
+  // Render loading state
   if (isLoading) {
     return <div className="py-10 text-center">Đang tải dữ liệu...</div>;
   }
 
-  // Hiển thị khi không có dữ liệu
+  // Render empty state
   if (!displayRequests || displayRequests.length === 0) {
     return (
       <div className="py-8 text-center text-muted-foreground">
@@ -349,7 +366,7 @@ export function RegistrationApprovalList({ notificationId }: RegistrationApprova
     );
   }
 
-  // Nội dung bảng danh sách đăng ký
+  // Render data table
   const renderRequestsTable = () => (
     <>
       <Table>
@@ -393,7 +410,7 @@ export function RegistrationApprovalList({ notificationId }: RegistrationApprova
                     </Button>
                     <Button 
                       size="sm" 
-                      variant="destructive" 
+                      variant="outline" 
                       onClick={() => handleReject(request)}
                       disabled={rejectRequest.isPending}
                     >
@@ -416,46 +433,9 @@ export function RegistrationApprovalList({ notificationId }: RegistrationApprova
     </>
   );
 
-  // Nếu đang hiển thị chi tiết của một thông báo, không cần card wrapper
-  if (notificationId) {
-    return (
-      <>
-        {renderRequestsTable()}
-
-        <RejectDialog 
-          open={showRejectDialog}
-          onOpenChange={setShowRejectDialog}
-          rejectReason={rejectReason}
-          onReasonChange={handleRejectReasonChange}
-          onConfirm={confirmReject}
-          isPending={rejectRequest.isPending}
-        />
-
-        <CreateEventDialog 
-          open={showCreateEventDialog}
-          onOpenChange={setShowCreateEventDialog}
-          eventForm={eventForm}
-          onEventFormChange={handleEventFormChange}
-          onCreateEvent={handleCreateEvent}
-          isPending={createEvent.isPending}
-        />
-      </>
-    );
-  }
-
-  // Trường hợp hiển thị ở dashboard (không có notificationId)
-  return (
+  // Render dialogs 
+  const renderDialogs = () => (
     <>
-      <Card>
-        <CardHeader>
-          <CardTitle>Đăng ký chờ duyệt</CardTitle>
-          <CardDescription>Danh sách đăng ký tổ chức hiến máu từ các cơ sở tình nguyện</CardDescription>
-        </CardHeader>
-        <CardContent>
-          {renderRequestsTable()}
-        </CardContent>
-      </Card>
-
       <RejectDialog 
         open={showRejectDialog}
         onOpenChange={setShowRejectDialog}
@@ -475,4 +455,30 @@ export function RegistrationApprovalList({ notificationId }: RegistrationApprova
       />
     </>
   );
-} 
+
+  // Render theo context - chi tiết thông báo hoặc dashboard
+  if (notificationId) {
+    return (
+      <>
+        {renderRequestsTable()}
+        {renderDialogs()}
+      </>
+    );
+  }
+
+  // Trường hợp dashboard view
+  return (
+    <>
+      <Card>
+        <CardHeader>
+          <CardTitle>Đăng ký chờ duyệt</CardTitle>
+          <CardDescription>Danh sách đăng ký tổ chức hiến máu từ các cơ sở tình nguyện</CardDescription>
+        </CardHeader>
+        <CardContent>
+          {renderRequestsTable()}
+        </CardContent>
+      </Card>
+      {renderDialogs()}
+    </>
+  );
+}

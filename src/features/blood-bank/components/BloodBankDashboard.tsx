@@ -11,17 +11,25 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Bell, CalendarCheck, Users, ChevronRight } from 'lucide-react';
+import { InlineLoading, Loading } from '@/components/ui/loading';
 
 export function BloodBankDashboard() {
-  const [activeTab, setActiveTab] = useState<'notifications' | 'approvals'>('notifications');
-  const { pendingRequests } = useOrganizationRequests();
-  const { events } = useEvents();
+  const [activeTab, setActiveTab] = useState<string>('notifications');
+  const { pendingRequests, isLoading: isRequestsLoading } = useOrganizationRequests();
+  const { events, isLoading: isEventsLoading } = useEvents();
+
+  const isLoading = isRequestsLoading || isEventsLoading;
 
   // Tính toán số lượng sự kiện sắp tới (events với trạng thái 'upcoming')
   const upcomingEvents = events?.filter(e => e.TrangThaiSuKien === 'upcoming') || [];
   
   // Tính toán số lượng đăng ký đang chờ duyệt
   const pendingRequestsCount = pendingRequests?.length || 0;
+
+  // Handle tab change
+  const handleTabChange = (value: string) => {
+    setActiveTab(value);
+  };
 
   return (
     <div className="container mx-auto py-8">
@@ -36,10 +44,16 @@ export function BloodBankDashboard() {
             <Bell className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{pendingRequestsCount}</div>
-            <p className="text-xs text-muted-foreground">
-              Yêu cầu từ các cơ sở tình nguyện
-            </p>
+            {isRequestsLoading ? (
+              <Loading variant="skeleton" count={2} />
+            ) : (
+              <>
+                <div className="text-2xl font-bold">{pendingRequestsCount}</div>
+                <p className="text-xs text-muted-foreground">
+                  Yêu cầu từ các cơ sở tình nguyện
+                </p>
+              </>
+            )}
           </CardContent>
           <CardFooter>
             <Link href="/blood-bank/events" passHref>
@@ -59,10 +73,16 @@ export function BloodBankDashboard() {
             <CalendarCheck className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{upcomingEvents.length}</div>
-            <p className="text-xs text-muted-foreground">
-              Trong vòng 30 ngày tới
-            </p>
+            {isEventsLoading ? (
+              <Loading variant="skeleton" count={2} />
+            ) : (
+              <>
+                <div className="text-2xl font-bold">{upcomingEvents.length}</div>
+                <p className="text-xs text-muted-foreground">
+                  Trong vòng 30 ngày tới
+                </p>
+              </>
+            )}
           </CardContent>
           <CardFooter>
             <Link href="/blood-bank/events" passHref>
@@ -100,7 +120,7 @@ export function BloodBankDashboard() {
       
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div className="md:col-span-2">
-          <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as any)}>
+          <Tabs defaultValue="notifications" value={activeTab} onValueChange={handleTabChange}>
             <TabsList className="mb-4">
               <TabsTrigger value="notifications">Thông báo</TabsTrigger>
               <TabsTrigger value="approvals">Duyệt đăng ký</TabsTrigger>
@@ -121,7 +141,13 @@ export function BloodBankDashboard() {
             </TabsContent>
             
             <TabsContent value="approvals">
-              <RegistrationApprovalList />
+              {isRequestsLoading ? (
+                <div className="p-6 border rounded-lg">
+                  <InlineLoading text="Đang tải danh sách đăng ký..." />
+                </div>
+              ) : (
+                <RegistrationApprovalList />
+              )}
             </TabsContent>
           </Tabs>
         </div>
@@ -135,7 +161,13 @@ export function BloodBankDashboard() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <BloodTypeStatsCard />
+              {isLoading ? (
+                <div className="flex justify-center items-center h-40">
+                  <Loading variant="spinner" text="Đang tải dữ liệu..." />
+                </div>
+              ) : (
+                <BloodTypeStatsCard />
+              )}
             </CardContent>
             <CardFooter>
               <Link href="/blood-bank/statistics" passHref>

@@ -21,6 +21,11 @@ interface NavItem {
   roles?: UserRole[];
 }
 
+interface MenuItem {
+  label: string;
+  href: string;
+}
+
 export function Header() {
   const { user, isAuthenticated, logout } = useAuthStore();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -51,50 +56,48 @@ export function Header() {
     return item.roles.includes(user?.role as UserRole);
   });
 
-  // Render role-specific management dropdown
-  const renderManagementDropdown = () => {
-    if (!isAuthenticated || !user) return null;
-
-    let menuItems = [];
+  // Lấy danh sách menu quản lý theo vai trò
+  const getManagementMenuItems = (): MenuItem[] => {
+    if (!isAuthenticated || !user) return [];
 
     switch (user.role) {
       case "blood_bank_director":
-        menuItems = [
+        return [
           { label: "Quản lý thông báo", href: "/blood-bank/notifications" },
           { label: "Quản lý sự kiện", href: "/blood-bank/events" },
           { label: "Quản lý yêu cầu", href: "/blood-bank/requests" },
           { label: "Báo cáo & thống kê", href: "/blood-bank/reports" },
         ];
-        break;
       case "volunteer_center_manager":
-        menuItems = [
+        return [
           { label: "Quản lý tình nguyện viên", href: "/volunteer-center/volunteers" },
           { label: "Quản lý sự kiện", href: "/volunteer-center/events" },
         ];
-        break;
       case "medical_staff":
-        menuItems = [
+        return [
           { label: "Quản lý hiến máu", href: "/medical-staff/donations" },
           { label: "Quản lý sự kiện", href: "/medical-staff/events" },
         ];
-        break;
       case "doctor":
-        menuItems = [
+        return [
           { label: "Đánh giá máu", href: "/doctor/evaluations" },
           { label: "Lịch sử hiến máu", href: "/doctor/donation-history" },
         ];
-        break;
       case "admin":
-        menuItems = [
+        return [
           { label: "Quản lý người dùng", href: "/admin/users" },
           { label: "Quản lý bệnh viện", href: "/admin/hospitals" },
           { label: "Cài đặt hệ thống", href: "/admin/settings" },
         ];
-        break;
       default:
-        return null;
+        return [];
     }
+  };
 
+  // Render role-specific management dropdown
+  const renderManagementDropdown = () => {
+    const menuItems = getManagementMenuItems();
+    
     if (menuItems.length === 0) return null;
 
     return (
@@ -140,7 +143,7 @@ export function Header() {
   };
 
   return (
-    <header className="sticky top-0 z-40 w-full border-b bg-background">
+    <header className="sticky top-0 z-40 w-full border-b bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/60">
       <div className="container mx-auto flex h-16 items-center justify-between px-4">
         <div className="flex items-center">
           <Link href={isAuthenticated ? getUserHomePage() : "/"} className="flex items-center space-x-2">
@@ -241,7 +244,7 @@ export function Header() {
 
       {/* Mobile menu */}
       {isMobileMenuOpen && (
-        <div className="md:hidden border-t">
+        <div className="md:hidden border-t bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/60">
           <div className="container mx-auto px-4 py-3 space-y-3">
             {filteredNavItems.map((item) => (
               <Link
@@ -259,39 +262,16 @@ export function Header() {
               <>
                 <div className="border-t pt-3 mt-3">
                   <div className="text-sm font-semibold mb-2">Quản lý</div>
-                  {user.role === "blood_bank_director" && (
-                    <>
-                      <Link href="/blood-bank/notifications" className="block text-sm py-1 hover:text-primary">Quản lý thông báo</Link>
-                      <Link href="/blood-bank/events" className="block text-sm py-1 hover:text-primary">Quản lý sự kiện</Link>
-                      <Link href="/blood-bank/requests" className="block text-sm py-1 hover:text-primary">Quản lý yêu cầu</Link>
-                      <Link href="/blood-bank/reports" className="block text-sm py-1 hover:text-primary">Báo cáo & thống kê</Link>
-                    </>
-                  )}
-                  {user.role === "volunteer_center_manager" && (
-                    <>
-                      <Link href="/volunteer-center/volunteers" className="block text-sm py-1 hover:text-primary">Quản lý tình nguyện viên</Link>
-                      <Link href="/volunteer-center/events" className="block text-sm py-1 hover:text-primary">Quản lý sự kiện</Link>
-                    </>
-                  )}
-                  {user.role === "medical_staff" && (
-                    <>
-                      <Link href="/medical-staff/donations" className="block text-sm py-1 hover:text-primary">Quản lý hiến máu</Link>
-                      <Link href="/medical-staff/events" className="block text-sm py-1 hover:text-primary">Quản lý sự kiện</Link>
-                    </>
-                  )}
-                  {user.role === "doctor" && (
-                    <>
-                      <Link href="/doctor/evaluations" className="block text-sm py-1 hover:text-primary">Đánh giá máu</Link>
-                      <Link href="/doctor/donation-history" className="block text-sm py-1 hover:text-primary">Lịch sử hiến máu</Link>
-                    </>
-                  )}
-                  {user.role === "admin" && (
-                    <>
-                      <Link href="/admin/users" className="block text-sm py-1 hover:text-primary">Quản lý người dùng</Link>
-                      <Link href="/admin/hospitals" className="block text-sm py-1 hover:text-primary">Quản lý bệnh viện</Link>
-                      <Link href="/admin/settings" className="block text-sm py-1 hover:text-primary">Cài đặt hệ thống</Link>
-                    </>
-                  )}
+                  {getManagementMenuItems().map((item) => (
+                    <Link 
+                      key={item.href}
+                      href={item.href} 
+                      className="block text-sm py-1 hover:text-primary"
+                      onClick={() => setIsMobileMenuOpen(false)}
+                    >
+                      {item.label}
+                    </Link>
+                  ))}
                 </div>
               </>
             )}

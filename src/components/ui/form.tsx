@@ -1,5 +1,6 @@
 import * as React from "react";
-import { useFormContext } from "react-hook-form";
+import { useFormContext, FieldValues, ControllerRenderProps } from "react-hook-form";
+import { cn } from "@/lib/utils";
 
 const Form = React.forwardRef<
   HTMLFormElement,
@@ -22,7 +23,7 @@ const FormItem = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <div
     ref={ref}
-    className={`space-y-2 ${className}`}
+    className={cn("space-y-2", className)}
     {...props}
   />
 ));
@@ -34,7 +35,11 @@ const FormLabel = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <label
     ref={ref}
-    className={`text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 ${className}`}
+    className={cn(
+      "text-sm font-medium leading-none text-foreground",
+      "peer-disabled:cursor-not-allowed peer-disabled:opacity-70",
+      className
+    )}
     {...props}
   />
 ));
@@ -66,7 +71,7 @@ const FormMessage = React.forwardRef<
   return (
     <p
       ref={ref}
-      className={`text-sm font-medium text-destructive ${className}`}
+      className={cn("text-sm font-medium text-destructive", className)}
       {...props}
     >
       {error?.message?.toString() || props.children}
@@ -75,14 +80,30 @@ const FormMessage = React.forwardRef<
 });
 FormMessage.displayName = "FormMessage";
 
-const FormField = ({
+// Định nghĩa interface cho FieldState thay vì import
+interface CustomFieldState {
+  invalid?: boolean;
+  isDirty?: boolean;
+  error?: any;
+}
+
+interface FormFieldProps<TFieldValues extends FieldValues = FieldValues> {
+  name: string;
+  control?: any;
+  render: (props: { 
+    field: Partial<ControllerRenderProps>; 
+    fieldState: CustomFieldState 
+  }) => React.ReactNode;
+}
+
+const FormField = <TFieldValues extends FieldValues = FieldValues>({
   name,
   control,
   render,
-}) => {
+}: FormFieldProps<TFieldValues>) => {
   const { formState } = useFormContext() || { formState: {} };
   
-  const fieldState = name ? {
+  const fieldState: CustomFieldState = name ? {
     invalid: Boolean(formState.errors?.[name]),
     isDirty: Boolean(formState.dirtyFields?.[name]),
     error: formState.errors?.[name],
@@ -91,7 +112,7 @@ const FormField = ({
   const field = {
     name,
     value: control?.getValues?.(name) || '',
-    onChange: (value) => control?.setValue?.(name, value),
+    onChange: (value: any) => control?.setValue?.(name, value),
   };
   
   return render({ field, fieldState });
