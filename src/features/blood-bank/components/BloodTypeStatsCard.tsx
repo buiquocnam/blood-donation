@@ -31,7 +31,7 @@ export function BloodTypeStatsCard() {
   const stats = filteredStats || bloodTypeStats;
   const isLoading = isBloodTypeStatsLoading || isFilteredStatsLoading;
 
-  const handleExport = (format: 'pdf' | 'csv' | 'excel') => {
+  const handleExport = (format: 'pdf' | 'excel') => {
     exportReport(
       format, 
       dateRange.start?.toISOString(), 

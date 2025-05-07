@@ -8,20 +8,20 @@ import { cn } from "@/lib/utils";
 
 // Hằng số style chung theo chức năng
 const BASE_CLASSES = {
+  // Layout & Appearance
+  content: "dropdown-content", // CSS class từ globals.css
+  item: "dropdown-item", // CSS class từ globals.css
+  
   // Animation
   animation:
     "data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2",
   
-  // Components
-  content: "dropdown-content", // CSS class từ globals.css
-  item: "dropdown-item", // CSS class từ globals.css
-  
-  // States
-  disabled: "data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
-  focus: "focus:text-accent-foreground focus:bg-accent",
+  // Interactive States
   hover: "hover-accent", // CSS class từ globals.css
+  focus: "focus:text-accent-foreground focus:bg-accent",
   active: "active:bg-accent/90 active:text-accent-foreground",
   selected: "data-[state=open]:bg-primary data-[state=open]:text-primary-foreground",
+  disabled: "data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
 };
 
 /**
@@ -246,7 +246,7 @@ const DropdownMenuSeparator = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <DropdownMenuPrimitive.Separator
     ref={ref}
-    className={cn("-mx-1 my-1 h-px bg-muted", className)}
+    className={cn("-mx-1 my-1 h-px bg-[var(--muted)]", className)}
     {...props}
   />
 ));

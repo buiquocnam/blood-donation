@@ -1,31 +1,31 @@
-import { mockBloodEvents, mockRegistrationRequests } from "../mock/data";
-import type { BloodEvent, EventFormData } from "../types";
+import { mockRegistrationRequests } from "../mock/data";
+import type { DANGKITOCHUCHIENMAU_WithRelations, FormDuLieuSuKien, TrangThaiSuKien } from "../types";
 
 /**
- * Service for managing blood donation events
+ * Service quản lý sự kiện hiến máu
  */
 export const eventService = {
   /**
-   * Get all blood donation events
+   * Lấy tất cả sự kiện hiến máu
    */
-  async getEvents(): Promise<BloodEvent[]> {
-    return Promise.resolve(mockBloodEvents);
+  async getEvents(): Promise<DANGKITOCHUCHIENMAU_WithRelations[]> {
+    return Promise.resolve(mockRegistrationRequests);
   },
 
   /**
-   * Get events with a specific status
+   * Lấy sự kiện theo trạng thái cụ thể
    */
-  async getEventsByStatus(status: 'upcoming' | 'ongoing' | 'completed' | 'cancelled'): Promise<BloodEvent[]> {
+  async getEventsByStatus(status: TrangThaiSuKien): Promise<DANGKITOCHUCHIENMAU_WithRelations[]> {
     return Promise.resolve(
-      mockBloodEvents.filter(event => event.TrangThaiSuKien === status)
+      mockRegistrationRequests.filter(event => event.TrangThaiSuKien === status)
     );
   },
 
   /**
-   * Get a specific event by ID
+   * Lấy sự kiện theo ID
    */
-  async getEventById(id: string): Promise<BloodEvent> {
-    const event = mockBloodEvents.find(e => e.IdSuKienHienMau === id);
+  async getEventById(id: string): Promise<DANGKITOCHUCHIENMAU_WithRelations> {
+    const event = mockRegistrationRequests.find(e => e.IdSuKien === id);
     if (!event) {
       return Promise.reject(new Error("Không tìm thấy sự kiện"));
     }
@@ -33,89 +33,113 @@ export const eventService = {
   },
 
   /**
-   * Create a new event from an approved registration
+   * Tạo sự kiện mới từ đăng ký đã được duyệt
    */
-  async createEvent(registrationId: string, eventData: EventFormData): Promise<BloodEvent> {
-    const registration = mockRegistrationRequests.find(req => req.IdDangKiTC === registrationId);
+  async createEvent(registrationId: string, eventData: FormDuLieuSuKien): Promise<DANGKITOCHUCHIENMAU_WithRelations> {
+    const registration = mockRegistrationRequests.find(req => req.IdSuKien === registrationId);
     if (!registration) {
       return Promise.reject(new Error("Không tìm thấy đăng ký"));
     }
 
-    const newEvent: BloodEvent = {
-      IdSuKienHienMau: `sk${mockBloodEvents.length + 1}`,
-      IdDangKiTC: registrationId,
-      SoLuongDK: 0,
-      SoLuongDDK: 0,
-      TgBatDauSK: eventData.TgBatDauSK,
-      TgKetThucSK: eventData.TgKetThucSK,
-      HanDK: eventData.HanDK,
+    // Thời gian của sự kiện sẽ được lấy từ ThongBao
+    const newEvent = {
+      IdSuKien: registrationId,
+      IdThongBaoDK: registration.IdThongBaoDK,
+      IDCoSoTinhNguyen: registration.IDCoSoTinhNguyen,
+      NgayDangKi: registration.NgayDangKi,
+      TinhTrangDK: "approved",
+      SoLuongDK: eventData.SoLuongDK || 0,
+      SoLuongDDK: eventData.SoLuongDDK || 0,
+      TrangThaiSuKien: eventData.TrangThaiSuKien || "upcoming",
       NgayDang: new Date().toISOString(),
       NgaySua: new Date().toISOString(),
-      TrangThaiSuKien: "upcoming" as const,
-      DangKiTC: registration
+      HanDK: eventData.HanDK,
+      CoSoTinhNguyen: registration.CoSoTinhNguyen,
+      ThongBao: registration.ThongBao
     };
 
-    // Trong thực tế, đây sẽ là API call
-    return Promise.resolve(newEvent);
+    return Promise.resolve(newEvent as DANGKITOCHUCHIENMAU_WithRelations);
   },
 
   /**
-   * Update an existing event
+   * Cập nhật sự kiện hiện có
    */
-  async updateEvent(id: string, eventData: Partial<EventFormData>): Promise<BloodEvent> {
-    const event = mockBloodEvents.find(e => e.IdSuKienHienMau === id);
+  async updateEvent(id: string, eventData: Partial<FormDuLieuSuKien>): Promise<DANGKITOCHUCHIENMAU_WithRelations> {
+    const event = mockRegistrationRequests.find(e => e.IdSuKien === id);
     if (!event) {
       return Promise.reject(new Error("Không tìm thấy sự kiện"));
     }
 
-    const updatedEvent: BloodEvent = {
-      ...event,
-      ...eventData,
-      NgaySua: new Date().toISOString()
-    };
+    // Cập nhật sự kiện với các giá trị mới
+    const updatedEventData = { ...event };
+    
+    if (eventData.SoLuongDK !== undefined) {
+      updatedEventData.SoLuongDK = eventData.SoLuongDK;
+    }
+    
+    if (eventData.SoLuongDDK !== undefined) {
+      updatedEventData.SoLuongDDK = eventData.SoLuongDDK;
+    }
+    
+    if (eventData.TrangThaiSuKien) {
+      updatedEventData.TrangThaiSuKien = eventData.TrangThaiSuKien;
+    }
+    
+    if (eventData.HanDK) {
+      updatedEventData.HanDK = eventData.HanDK;
+    }
+    
+    updatedEventData.NgaySua = new Date().toISOString();
 
-    // Trong thực tế, đây sẽ là API call
-    return Promise.resolve(updatedEvent);
+    // Giả lập cập nhật
+    console.log(`Đã cập nhật sự kiện ${id}`);
+
+    return Promise.resolve(updatedEventData as DANGKITOCHUCHIENMAU_WithRelations);
   },
 
   /**
-   * Cancel an event
+   * Hủy sự kiện
    */
-  async cancelEvent(id: string, reason: string): Promise<BloodEvent> {
-    const event = mockBloodEvents.find(e => e.IdSuKienHienMau === id);
+  async cancelEvent(id: string, reason: string): Promise<DANGKITOCHUCHIENMAU_WithRelations> {
+    const event = mockRegistrationRequests.find(e => e.IdSuKien === id);
     if (!event) {
       return Promise.reject(new Error("Không tìm thấy sự kiện"));
     }
 
-    // Trong triển khai thực tế, sẽ lưu lý do hủy trong DB
-    console.log(`Cancelled event ${id} with reason: ${reason}`);
+    if (event.TrangThaiSuKien === "completed") {
+      return Promise.reject(new Error("Không thể hủy sự kiện đã hoàn thành"));
+    }
 
-    const cancelledEvent: BloodEvent = {
+    // Giả lập việc hủy sự kiện
+    console.log(`Đã hủy sự kiện ${id} với lý do: ${reason}`);
+
+    const cancelledEvent = {
       ...event,
-      TrangThaiSuKien: "cancelled" as const,
+      TrangThaiSuKien: "cancelled",
       NgaySua: new Date().toISOString()
     };
 
-    // Trong thực tế, đây sẽ là API call
-    return Promise.resolve(cancelledEvent);
+    return Promise.resolve(cancelledEvent as DANGKITOCHUCHIENMAU_WithRelations);
   },
 
   /**
-   * Mark an event as complete
+   * Đánh dấu sự kiện đã hoàn thành
    */
-  async completeEvent(id: string): Promise<BloodEvent> {
-    const event = mockBloodEvents.find(e => e.IdSuKienHienMau === id);
+  async completeEvent(id: string): Promise<DANGKITOCHUCHIENMAU_WithRelations> {
+    const event = mockRegistrationRequests.find(e => e.IdSuKien === id);
     if (!event) {
       return Promise.reject(new Error("Không tìm thấy sự kiện"));
     }
 
-    const completedEvent: BloodEvent = {
+    const completedEvent = {
       ...event,
-      TrangThaiSuKien: "completed" as const,
+      TrangThaiSuKien: "completed",
       NgaySua: new Date().toISOString()
     };
 
-    // Trong thực tế, đây sẽ là API call
-    return Promise.resolve(completedEvent);
+    // Giả lập hoàn thành sự kiện
+    console.log(`Đã hoàn thành sự kiện ${id}`);
+
+    return Promise.resolve(completedEvent as DANGKITOCHUCHIENMAU_WithRelations);
   }
 }; 

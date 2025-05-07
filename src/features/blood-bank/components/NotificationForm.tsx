@@ -8,10 +8,10 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { DateTimePicker } from '@/components/ui/date-time-picker';
 import { useNotifications } from '../hooks/useNotifications';
-import { Notification, NotificationFormData } from '../types';
+import { THONGBAODKTOCHUC, FormDuLieuThongBao } from '@/types';
 
 interface NotificationFormProps {
-  notification?: Notification;
+  notification?: THONGBAODKTOCHUC;
   onSuccess?: () => void;
 }
 
@@ -19,10 +19,12 @@ interface NotificationFormProps {
 interface FormState {
   TieuDe: string;
   NoiDung: string;
-  SoLuongHien: number;
+  SoLuongMauHien: number;
   HanDangKi: Date | undefined;
   TgBatDauDK: Date | undefined;
   TgKetThucDK: Date | undefined;
+  TgBatDauSK: Date | undefined;
+  TgKetThucSK: Date | undefined;
   HanDK: Date | undefined;
 }
 
@@ -32,10 +34,12 @@ export function NotificationForm({ notification, onSuccess }: NotificationFormPr
   const [formData, setFormData] = useState<FormState>({
     TieuDe: notification?.TieuDe || '',
     NoiDung: notification?.NoiDung || '',
-    SoLuongHien: notification?.SoLuongHien || 0,
+    SoLuongMauHien: notification?.SoLuongMauHien || 0,
     HanDangKi: notification?.HanDangKi ? new Date(notification.HanDangKi) : undefined,
     TgBatDauDK: notification?.TgBatDauDK ? new Date(notification.TgBatDauDK) : undefined,
     TgKetThucDK: notification?.TgKetThucDK ? new Date(notification.TgKetThucDK) : undefined,
+    TgBatDauSK: notification?.TgBatDauSK ? new Date(notification.TgBatDauSK) : undefined,
+    TgKetThucSK: notification?.TgKetThucSK ? new Date(notification.TgKetThucSK) : undefined,
     HanDK: notification?.HanDK ? new Date(notification.HanDK) : undefined,
   });
 
@@ -57,20 +61,23 @@ export function NotificationForm({ notification, onSuccess }: NotificationFormPr
     e.preventDefault();
     
     // Check required fields
-    if (!formData.TieuDe || !formData.NoiDung || !formData.SoLuongHien || 
-        !formData.TgBatDauDK || !formData.TgKetThucDK || !formData.HanDangKi || !formData.HanDK) {
+    if (!formData.TieuDe || !formData.NoiDung || !formData.SoLuongMauHien || 
+        !formData.TgBatDauDK || !formData.TgKetThucDK || !formData.HanDangKi || !formData.HanDK ||
+        !formData.TgBatDauSK || !formData.TgKetThucSK) {
       return;
     }
     
     // Convert Date objects to ISO strings for submission
-    const dataToSubmit: NotificationFormData = {
+    const dataToSubmit: FormDuLieuThongBao = {
       TieuDe: formData.TieuDe,
       NoiDung: formData.NoiDung,
-      SoLuongHien: formData.SoLuongHien,
+      SoLuongMauHien: formData.SoLuongMauHien,
       HanDangKi: formData.HanDangKi.toISOString(),
       TgBatDauDK: formData.TgBatDauDK.toISOString(),
       TgKetThucDK: formData.TgKetThucDK.toISOString(),
-      HanDK: formData.HanDK.toISOString(),
+      TgBatDauSK: formData.TgBatDauSK.toISOString(),
+      TgKetThucSK: formData.TgKetThucSK.toISOString(),
+      HanDK: formData.HanDK?.toISOString(),
     };
 
     if (notification) {
@@ -94,10 +101,12 @@ export function NotificationForm({ notification, onSuccess }: NotificationFormPr
           setFormData({
             TieuDe: '',
             NoiDung: '',
-            SoLuongHien: 0,
+            SoLuongMauHien: 0,
             HanDangKi: undefined,
             TgBatDauDK: undefined,
             TgKetThucDK: undefined,
+            TgBatDauSK: undefined,
+            TgKetThucSK: undefined,
             HanDK: undefined,
           });
           
@@ -113,21 +122,25 @@ export function NotificationForm({ notification, onSuccess }: NotificationFormPr
       setFormData({
         TieuDe: notification.TieuDe,
         NoiDung: notification.NoiDung,
-        SoLuongHien: notification.SoLuongHien,
+        SoLuongMauHien: notification.SoLuongMauHien,
         HanDangKi: new Date(notification.HanDangKi),
         TgBatDauDK: new Date(notification.TgBatDauDK),
         TgKetThucDK: new Date(notification.TgKetThucDK),
-        HanDK: new Date(notification.HanDK),
+        TgBatDauSK: notification.TgBatDauSK ? new Date(notification.TgBatDauSK) : undefined,
+        TgKetThucSK: notification.TgKetThucSK ? new Date(notification.TgKetThucSK) : undefined,
+        HanDK: notification.HanDK ? new Date(notification.HanDK) : undefined,
       });
     } else {
       // Clear form
       setFormData({
         TieuDe: '',
         NoiDung: '',
-        SoLuongHien: 0,
+        SoLuongMauHien: 0,
         HanDangKi: undefined,
         TgBatDauDK: undefined,
         TgKetThucDK: undefined,
+        TgBatDauSK: undefined,
+        TgKetThucSK: undefined,
         HanDK: undefined,
       });
     }
@@ -161,13 +174,13 @@ export function NotificationForm({ notification, onSuccess }: NotificationFormPr
         </div>
 
         <div className="space-y-2">
-            <Label htmlFor="SoLuongHien">Số lượng hiến (dự kiến)</Label>
+            <Label htmlFor="SoLuongMauHien">Số lượng máu hiến (dự kiến)</Label>
           <Input 
-              id="SoLuongHien"
-              name="SoLuongHien"
+              id="SoLuongMauHien"
+              name="SoLuongMauHien"
               type="number"
               min={1}
-              value={formData.SoLuongHien}
+              value={formData.SoLuongMauHien}
               onChange={handleNumberChange}
             required
           />
@@ -187,6 +200,23 @@ export function NotificationForm({ notification, onSuccess }: NotificationFormPr
               <DateTimePicker
                 value={formData.TgKetThucDK}
                 onChange={(date) => handleDateChange("TgKetThucDK", date)}
+          />
+        </div>
+      </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="TgBatDauSK">Thời gian bắt đầu sự kiện</Label>
+              <DateTimePicker
+                value={formData.TgBatDauSK}
+                onChange={(date) => handleDateChange("TgBatDauSK", date)}
+              />
+          </div>
+            <div className="space-y-2">
+              <Label htmlFor="TgKetThucSK">Thời gian kết thúc sự kiện</Label>
+              <DateTimePicker
+                value={formData.TgKetThucSK}
+                onChange={(date) => handleDateChange("TgKetThucSK", date)}
           />
         </div>
       </div>

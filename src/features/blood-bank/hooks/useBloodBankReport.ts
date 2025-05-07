@@ -3,60 +3,55 @@
 import { useQuery } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { reportService } from '../services/reportService';
+import { BloodTypeStats, DonationStats, BloodBankReport } from '@/types';
 
 /**
  * Hook for managing blood bank reports and statistics
  */
 export function useBloodBankReport() {
   // Get full report
-  const { data: fullReport, isLoading: isFullReportLoading, error: fullReportError } = useQuery({
+  const { data: fullReport, isLoading: isFullReportLoading, error: fullReportError } = useQuery<BloodBankReport>({
     queryKey: ['blood-bank', 'reports', 'full'],
     queryFn: () => reportService.getFullReport(),
   });
 
-  // Get blood type statistics
-  const { data: bloodTypeStats, isLoading: isBloodTypeStatsLoading } = useQuery({
+  // Lấy thống kê nhóm máu
+  const { data: bloodTypeStats, isLoading: isBloodTypeStatsLoading } = useQuery<BloodTypeStats[]>({
     queryKey: ['blood-bank', 'reports', 'blood-types'],
     queryFn: () => reportService.getBloodTypeStats(),
   });
 
-  // Get donation statistics
-  const { data: donationStats, isLoading: isDonationStatsLoading } = useQuery({
+  // Lấy thống kê hiến máu
+  const { data: donationStats, isLoading: isDonationStatsLoading } = useQuery<DonationStats>({
     queryKey: ['blood-bank', 'reports', 'donations'],
     queryFn: () => reportService.getDonationStats(),
   });
 
-  // Get blood type statistics by date range
+  // Lấy thống kê nhóm máu theo khoảng thời gian
   const getBloodTypeStatsByDateRange = (startDate: string, endDate: string) => {
-    return useQuery({
+    return useQuery<BloodTypeStats[]>({
       queryKey: ['blood-bank', 'reports', 'blood-types', { startDate, endDate }],
       queryFn: () => reportService.getBloodTypeStatsByDateRange(startDate, endDate),
     });
   };
 
-  // Get donation statistics by date range
+  // Lấy thống kê hiến máu theo khoảng thời gian
   const getDonationStatsByDateRange = (startDate: string, endDate: string) => {
-    return useQuery({
+    return useQuery<DonationStats>({
       queryKey: ['blood-bank', 'reports', 'donations', { startDate, endDate }],
       queryFn: () => reportService.getDonationStatsByDateRange(startDate, endDate),
     });
   };
 
-  // Export report
-  const exportReport = async (format: 'pdf' | 'csv' | 'excel', startDate?: string, endDate?: string) => {
+  // Xuất báo cáo
+  const exportReport = async (format: 'pdf' | 'excel', startDate?: string, endDate?: string) => {
     try {
-      const blob = await reportService.exportReport(format, startDate, endDate);
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `blood-bank-report.${format}`;
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
-      toast.success(`Báo cáo đã được xuất thành công dưới dạng ${format.toUpperCase()}`);
+      const filename = await reportService.exportReport(format, startDate, endDate);
+      toast.success(`Báo cáo đã được xuất thành công: ${filename}`);
+      return filename;
     } catch (error) {
       toast.error('Không thể xuất báo cáo: ' + (error as Error).message);
+      throw error;
     }
   };
 

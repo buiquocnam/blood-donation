@@ -1,71 +1,91 @@
 import { mockRegistrationRequests } from "../mock/data";
-import type { RegistrationRequest } from "../types";
+import type { DANGKITOCHUCHIENMAU_WithRelations } from "../types";
 
-/**
- * Service for managing organization registration requests
- */
+// Dịch vụ quản lý yêu cầu đăng ký tổ chức
 export const organizationRequestService = {
-  /**
-   * Get all registration requests
-   */
-  async getRegistrationRequests(): Promise<RegistrationRequest[]> {
+  //Lấy tất cả yêu cầu đăng ký
+  async getRegistrationRequests(): Promise<DANGKITOCHUCHIENMAU_WithRelations[]> {
     return Promise.resolve(mockRegistrationRequests);
   },
 
-  /**
-   * Get pending registration requests
-   */
-  async getPendingRequests(): Promise<RegistrationRequest[]> {
+  //Lấy tất cả yêu cầu đăng ký chờ duyệt
+  async getPendingRequests(): Promise<DANGKITOCHUCHIENMAU_WithRelations[]> {
+    return Promise.resolve(mockRegistrationRequests.filter(req => req.TinhTrangDK === "pending"));
+  },
+
+  // Lấy yêu cầu đăng ký theo ID thông báo
+  async getRequestsByNotificationId(notificationId: string): Promise<DANGKITOCHUCHIENMAU_WithRelations[]> {
     return Promise.resolve(
-      mockRegistrationRequests.filter(req => req.TinhTrangDK === "pending")
+      mockRegistrationRequests.filter(req => req.IdThongBaoDK === notificationId)
     );
   },
 
-  /**
-   * Get registration requests for a specific notification
-   */
-  async getRequestsByNotificationId(notificationId: string): Promise<RegistrationRequest[]> {
-    return Promise.resolve(
-      mockRegistrationRequests.filter(req => req.IDThongBaoDK === notificationId)
-    );
-  },
-
-  /**
-   * Approve a registration request
-   */
-  async approveRequest(id: string): Promise<RegistrationRequest> {
-    const request = mockRegistrationRequests.find(req => req.IdDangKiTC === id);
+  //Phê duyệt yêu cầu đăng ký
+  async approveRequest(id: string): Promise<DANGKITOCHUCHIENMAU_WithRelations> {
+    const request = mockRegistrationRequests.find(req => req.IdSuKien === id);
     if (!request) {
       return Promise.reject(new Error("Không tìm thấy yêu cầu đăng ký"));
     }
 
-    const updatedRequest: RegistrationRequest = {
+    const updatedRequest: DANGKITOCHUCHIENMAU_WithRelations = {
       ...request,
-      TinhTrangDK: "approved" as const
+      TinhTrangDK: 'approved'
     };
 
     // Trong thực tế, đây sẽ là API call
     return Promise.resolve(updatedRequest);
   },
 
-  /**
-   * Reject a registration request
-   */
-  async rejectRequest(id: string, reason: string): Promise<RegistrationRequest> {
-    const request = mockRegistrationRequests.find(req => req.IdDangKiTC === id);
+    /**
+     * Reject a registration request
+     */
+  async rejectRequest(id: string, reason: string): Promise<DANGKITOCHUCHIENMAU_WithRelations> {
+    const request = mockRegistrationRequests.find(req => req.IdSuKien === id);
     if (!request) {
       return Promise.reject(new Error("Không tìm thấy yêu cầu đăng ký"));
     }
 
-    // Trong triển khai thực tế, sẽ lưu lý do từ chối trong DB
-    console.log(`Rejected request ${id} with reason: ${reason}`);
-
-    const updatedRequest: RegistrationRequest = {
+    const updatedRequest: DANGKITOCHUCHIENMAU_WithRelations = {
       ...request,
-      TinhTrangDK: "rejected" as const
+      TinhTrangDK: 'rejected'
+    };
+
+    // Trong thực tế, đây sẽ là API call và lưu lý do từ chối
+    return Promise.resolve(updatedRequest);
+  },
+  
+  //Tạo sự kiện từ yêu cầu đăng ký
+  async createEvent(registrationId: string, eventData: any): Promise<DANGKITOCHUCHIENMAU_WithRelations> {
+    const request = mockRegistrationRequests.find(req => req.IdSuKien === registrationId);
+    if (!request) {
+      return Promise.reject(new Error("Không tìm thấy yêu cầu đăng ký"));
+    }
+
+    if (request.TinhTrangDK !== 'approved') {
+      return Promise.reject(new Error("Yêu cầu đăng ký chưa được phê duyệt"));
+    }
+
+    // Thời gian sự kiện sẽ được lấy từ thông báo
+    // Sử dụng TgBatDauSK và TgKetThucSK từ ThongBao
+
+    //Tạo sự kiện mới
+    const newEvent: DANGKITOCHUCHIENMAU_WithRelations = {
+      IdSuKien: registrationId,
+      IdThongBaoDK: request.IdThongBaoDK,
+      IDCoSoTinhNguyen: request.IDCoSoTinhNguyen,
+      NgayDangKi: request.NgayDangKi,
+      TinhTrangDK: 'approved',
+      SoLuongDK: 0,
+      SoLuongDDK: 0,
+      TrangThaiSuKien: "upcoming",
+      NgayDang: new Date().toISOString(),
+      NgaySua: new Date().toISOString(),
+      HanDK: eventData.HanDK || new Date().toISOString(),
+      ThongBao: request.ThongBao,
+      CoSoTinhNguyen: request.CoSoTinhNguyen
     };
 
     // Trong thực tế, đây sẽ là API call
-    return Promise.resolve(updatedRequest);
+    return Promise.resolve(newEvent);
   }
 }; 

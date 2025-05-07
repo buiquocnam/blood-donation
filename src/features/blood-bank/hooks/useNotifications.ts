@@ -3,7 +3,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { notificationService } from '../services/notificationService';
-import type { NotificationFormData } from '../types';
+import type { THONGBAODKTOCHUC, FormDuLieuThongBao } from '../types';
 
 /**
  * Hook quản lý các thông báo hiến máu
@@ -19,7 +19,7 @@ export function useNotifications() {
 
   // Tạo một thông báo mới
   const createNotification = useMutation({
-    mutationFn: (data: NotificationFormData) => notificationService.createNotification(data),
+    mutationFn: (data: FormDuLieuThongBao) => notificationService.createNotification(data),
     onSuccess: () => {
       toast.success('Thông báo đã được tạo thành công');
       queryClient.invalidateQueries({ queryKey: ['blood-bank', 'notifications'] });
@@ -31,7 +31,7 @@ export function useNotifications() {
 
   // Cập nhật một thông báo đã tồn tại
   const updateNotification = useMutation({
-    mutationFn: ({ id, data }: { id: string; data: Partial<NotificationFormData> }) => 
+    mutationFn: ({ id, data }: { id: string; data: Partial<FormDuLieuThongBao> }) => 
       notificationService.updateNotification(id, data),
     onSuccess: () => {
       toast.success('Thông báo đã được cập nhật thành công');

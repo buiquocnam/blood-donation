@@ -4,11 +4,13 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { organizationRequestService } from '../services/organizationRequestService';
 import { eventService } from '../services/eventService';
-import type { EventFormData } from '../types';
+import type { DANGKITOCHUCHIENMAU_WithRelations } from '@/types';
+import { useState } from "react";
 
 // Quản lý các đăng ký từ các cơ sở tình nguyện
 export function useOrganizationRequests() {
   const queryClient = useQueryClient();
+  const [selectedRequest, setSelectedRequest] = useState<DANGKITOCHUCHIENMAU_WithRelations | null>(null);
 
   // Lấy danh sách tất cả các đăng ký
   const { data: requests, isLoading, error } = useQuery({
@@ -17,14 +19,20 @@ export function useOrganizationRequests() {
   });
 
   // Lấy danh sách các đăng ký đang chờ duyệt
-  const { data: pendingRequests, isLoading: isPendingLoading } = useQuery({
-    queryKey: ['blood-bank', 'organization-requests', 'pending'],
-    queryFn: () => organizationRequestService.getPendingRequests(),
+  const {
+    data: pendingRequests,
+    isLoading: isPendingLoading,
+    error: pendingError,
+  } = useQuery({
+    queryKey: ["organization-requests", "pending"],
+    queryFn: async () => {
+      return await organizationRequestService.getPendingRequests();
+    },
   });
 
   // Phê duyệt một đăng ký
   const approveRequest = useMutation({
-    mutationFn: (id: string) => organizationRequestService.approveRequest(id),
+    mutationFn: organizationRequestService.approveRequest,
     onSuccess: () => {
       toast.success('Đăng ký đã được phê duyệt thành công');
       queryClient.invalidateQueries({ queryKey: ['blood-bank', 'organization-requests'] });
@@ -36,8 +44,8 @@ export function useOrganizationRequests() {
 
   // Từ chối một đăng ký
   const rejectRequest = useMutation({
-    mutationFn: ({ id, reason }: { id: string; reason: string }) => 
-      organizationRequestService.rejectRequest(id, reason),
+    mutationFn: (params: { id: string; reason: string }) => 
+      organizationRequestService.rejectRequest(params.id, params.reason),
     onSuccess: () => {
       toast.success('Đăng ký đã bị từ chối');
       queryClient.invalidateQueries({ queryKey: ['blood-bank', 'organization-requests'] });
@@ -47,14 +55,14 @@ export function useOrganizationRequests() {
     },
   });
 
-    // Tạo một sự kiện từ đăng ký đã được phê duyệt
+  // Tạo một sự kiện từ đăng ký đã được phê duyệt
   const createEvent = useMutation({
-    mutationFn: ({ registrationId, eventData }: { registrationId: string; eventData: EventFormData }) => 
-      eventService.createEvent(registrationId, eventData),
+    mutationFn: (params: { registrationId: string; eventData: any }) => 
+      organizationRequestService.createEvent(params.registrationId, params.eventData),
     onSuccess: () => {
       toast.success('Sự kiện hiến máu đã được tạo thành công');
-      queryClient.invalidateQueries({ queryKey: ['blood-bank', 'events'] });
       queryClient.invalidateQueries({ queryKey: ['blood-bank', 'organization-requests'] });
+      queryClient.invalidateQueries({ queryKey: ['blood-bank', 'events'] });
     },
     onError: (error) => {
       toast.error('Không thể tạo sự kiện hiến máu: ' + (error as Error).message);
@@ -75,6 +83,9 @@ export function useOrganizationRequests() {
     error,
     pendingRequests,
     isPendingLoading,
+    pendingError,
+    selectedRequest,
+    setSelectedRequest,
     approveRequest,
     rejectRequest,
     createEvent,

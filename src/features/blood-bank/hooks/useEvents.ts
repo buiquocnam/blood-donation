@@ -3,29 +3,27 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { eventService } from '../services/eventService';
-import type { EventFormData } from '../types';
+import type { DANGKITOCHUCHIENMAU, FormDuLieuSuKien, TrangThaiSuKien } from '../types';
 
-/**
- * Hook for managing blood donation events
- */
+// Quản lý các sự kiện hiến máu
 export function useEvents() {
   const queryClient = useQueryClient();
 
-  // Get all events
+  // Lấy tất cả các sự kiện
   const { data: events, isLoading, error } = useQuery({
     queryKey: ['blood-bank', 'events'],
     queryFn: () => eventService.getEvents(),
   });
 
-  // Get events by status
-  const getEventsByStatus = (status: 'upcoming' | 'ongoing' | 'completed' | 'cancelled') => {
+  // Lấy sự kiện theo trạng thái
+  const getEventsByStatus = (status: TrangThaiSuKien) => {
     return useQuery({
       queryKey: ['blood-bank', 'events', status],
       queryFn: () => eventService.getEventsByStatus(status),
     });
   };
 
-  // Get specific event by ID
+  // Lấy sự kiện cụ thể theo ID
   const getEventById = (id: string) => {
     return useQuery({
       queryKey: ['blood-bank', 'events', id],
@@ -34,9 +32,9 @@ export function useEvents() {
     });
   };
 
-  // Update event details
+  // Cập nhật chi tiết sự kiện
   const updateEvent = useMutation({
-    mutationFn: ({ id, data }: { id: string; data: Partial<EventFormData> }) => 
+    mutationFn: ({ id, data }: { id: string; data: Partial<FormDuLieuSuKien> }) => 
       eventService.updateEvent(id, data),
     onSuccess: () => {
       toast.success('Sự kiện đã được cập nhật thành công');
@@ -47,7 +45,7 @@ export function useEvents() {
     },
   });
 
-  // Cancel an event
+  // Hủy sự kiện
   const cancelEvent = useMutation({
     mutationFn: ({ id, reason }: { id: string; reason: string }) => 
       eventService.cancelEvent(id, reason),
@@ -60,7 +58,7 @@ export function useEvents() {
     },
   });
 
-  // Mark event as complete
+  // Đánh dấu sự kiện là hoàn thành
   const completeEvent = useMutation({
     mutationFn: (id: string) => eventService.completeEvent(id),
     onSuccess: () => {
