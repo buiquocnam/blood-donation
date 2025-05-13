@@ -2,6 +2,7 @@
 export const AUTH_ENDPOINTS = {
   LOGIN: '/auth/login',
   REGISTER: '/auth/register',
+  REGISTER_VOLUNTEER_CENTER: '/auth/register-volunteer-center',
   LOGOUT: '/auth/logout',
   REFRESH_TOKEN: '/auth/refresh-token',
   ME: '/auth/me',

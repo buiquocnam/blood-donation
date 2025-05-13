@@ -1,22 +1,29 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAuthStore } from "@/features/auth/store/auth-store";
 import { toast } from "sonner";
+import { isNguoiDung, isCoSoTinhNguyen } from "@/utils/typeGuards";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Building, Calendar, Droplet, Mail, MapPin, Phone, User } from "lucide-react";
+import { Sidebar } from "@/components/layout/sidebar";
 
 export default function ProfilePage() {
   const { user } = useAuthStore();
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState({
-    name: user?.name || "",
-    email: user?.email || "",
-    phone: "0901234567", // Giả lập dữ liệu
-    address: "Số 1, Đường Trần Duy Hưng, Cầu Giấy, Hà Nội", // Giả lập dữ liệu
-    bloodType: "A+", // Chỉ áp dụng cho người hiến máu
-    dateOfBirth: "01/01/1990", // Giả lập dữ liệu
+    name: isNguoiDung(user) ? user.HoTen : isCoSoTinhNguyen(user) ? user.TenCoSoTinhNguyen : "",
+    email: user?.Email || "",
+    phone: user?.SDT || "",
+    address: isNguoiDung(user) ? user.tenDiaChi : isCoSoTinhNguyen(user) ? user.DiaChi : "",
+    bloodType: isNguoiDung(user) ? user.MaNhomMau : "",
+    dateOfBirth: isNguoiDung(user) ? user.NgaySinh : "",
+    position: isCoSoTinhNguyen(user) ? "Quản lý tình nguyện viên" : "",
+    organizationName: isCoSoTinhNguyen(user) ? user.TenCoSoTinhNguyen : "",
   });
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -27,317 +34,339 @@ export default function ProfilePage() {
     }));
   };
 
+  const handleSelectChange = (name: string, value: string) => {
+    setFormData((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    // Trong thực tế, gọi API để cập nhật thông tin người dùng
+    // API call would go here
     setTimeout(() => {
       toast.success("Đã cập nhật thông tin thành công");
       setIsEditing(false);
-    }, 1000);
+    }, 500);
   };
 
   const handleChangePassword = () => {
-    // Trong thực tế, chuyển hướng hoặc mở modal đổi mật khẩu
     toast.info("Tính năng đổi mật khẩu đang được phát triển");
   };
 
-  // Hiển thị thông tin dựa trên vai trò người dùng
-  const renderRoleSpecificInfo = () => {
-    if (user?.role === "donor") {
-      return (
-        <div className="mt-6 border-t pt-6">
-          <h3 className="text-lg font-semibold mb-4">Thông tin hiến máu</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <p className="text-sm font-medium text-gray-500">Nhóm máu</p>
-              <p className="text-base">{formData.bloodType}</p>
-            </div>
-            <div>
-              <p className="text-sm font-medium text-gray-500">Tổng số lần hiến máu</p>
-              <p className="text-base">3</p>
-            </div>
-            <div>
-              <p className="text-sm font-medium text-gray-500">Lần hiến máu gần nhất</p>
-              <p className="text-base">10/05/2023</p>
-            </div>
-            <div>
-              <p className="text-sm font-medium text-gray-500">Lần hiến máu tiếp theo có thể</p>
-              <p className="text-base">10/08/2023</p>
-            </div>
-          </div>
-        </div>
-      );
-    }
+  const isDonor = isNguoiDung(user) && user?.MaVaiTro === "ROLE_DONOR";
+  const isVolunteer = user?.MaVaiTro === "ROLE_VOLUNTEER" || isCoSoTinhNguyen(user);
 
-    if (user?.role === "medical_staff") {
-      return (
-        <div className="mt-6 border-t pt-6">
-          <h3 className="text-lg font-semibold mb-4">Thông tin công việc</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <p className="text-sm font-medium text-gray-500">Phòng ban</p>
-              <p className="text-base">Khoa Huyết học</p>
-            </div>
-            <div>
-              <p className="text-sm font-medium text-gray-500">Vị trí</p>
-              <p className="text-base">Nhân viên xét nghiệm</p>
-            </div>
-            <div>
-              <p className="text-sm font-medium text-gray-500">Ngày bắt đầu làm việc</p>
-              <p className="text-base">01/01/2021</p>
-            </div>
-          </div>
-        </div>
-      );
-    }
-
-    if (user?.role === "doctor") {
-      return (
-        <div className="mt-6 border-t pt-6">
-          <h3 className="text-lg font-semibold mb-4">Thông tin chuyên môn</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <p className="text-sm font-medium text-gray-500">Phòng ban</p>
-              <p className="text-base">Khoa Nội</p>
-            </div>
-            <div>
-              <p className="text-sm font-medium text-gray-500">Chuyên khoa</p>
-              <p className="text-base">Huyết học</p>
-            </div>
-            <div>
-              <p className="text-sm font-medium text-gray-500">Số giấy phép hành nghề</p>
-              <p className="text-base">MD12345</p>
-            </div>
-          </div>
-        </div>
-      );
-    }
-
-    if (user?.role === "blood_bank_director") {
-      return (
-        <div className="mt-6 border-t pt-6">
-          <h3 className="text-lg font-semibold mb-4">Thông tin công việc</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <p className="text-sm font-medium text-gray-500">Vị trí</p>
-              <p className="text-base">Giám đốc</p>
-            </div>
-            <div>
-              <p className="text-sm font-medium text-gray-500">Phòng ban</p>
-              <p className="text-base">Ngân hàng máu trung ương</p>
-            </div>
-            <div>
-              <p className="text-sm font-medium text-gray-500">Mã nhân viên</p>
-              <p className="text-base">BD1001</p>
-            </div>
-            <div>
-              <p className="text-sm font-medium text-gray-500">Ngày bắt đầu làm việc</p>
-              <p className="text-base">01/01/2018</p>
-            </div>
-          </div>
-        </div>
-      );
-    }
-
-    if (user?.role === "volunteer_center_manager") {
-      return (
-        <div className="mt-6 border-t pt-6">
-          <h3 className="text-lg font-semibold mb-4">Thông tin công việc</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <p className="text-sm font-medium text-gray-500">Vị trí</p>
-              <p className="text-base">Trưởng cơ sở</p>
-            </div>
-            <div>
-              <p className="text-sm font-medium text-gray-500">Cơ sở</p>
-              <p className="text-base">Trung tâm tình nguyện Hà Nội</p>
-            </div>
-            <div>
-              <p className="text-sm font-medium text-gray-500">Mã nhân viên</p>
-              <p className="text-base">VC2002</p>
-            </div>
-            <div>
-              <p className="text-sm font-medium text-gray-500">Ngày bắt đầu quản lý</p>
-              <p className="text-base">15/05/2020</p>
-            </div>
-          </div>
-        </div>
-      );
-    }
-
-    return null;
+  // Mock data for donors
+  const donorData = {
+    totalDonations: 3,
+    lastDonationDate: "10/05/2023",
+    nextPossibleDonationDate: "10/08/2023"
   };
 
   return (
-    <div className="max-w-5xl mx-auto px-4">
-      <div className="mb-8">
-        <h1 className="text-2xl font-bold">Hồ sơ cá nhân</h1>
-        <p className="text-gray-600 mt-1">Xem và cập nhật thông tin cá nhân của bạn</p>
-      </div>
+    <div className="flex h-screen bg-background">
+      <Sidebar />
+      
+      <div className="flex-1 flex flex-col overflow-hidden">
+        <main className="flex-1 overflow-y-auto">
+          <div className="p-6">
+            <div className="container max-w-4xl mx-auto">
+              <Card className="shadow-sm border-border/40">
+                <CardHeader className="pb-4">
+                  <div className="flex items-center justify-between">
+                    <CardTitle>Thông tin cá nhân</CardTitle>
+                    {!isEditing && (
+                      <Button onClick={() => setIsEditing(true)}>Chỉnh sửa</Button>
+                    )}
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  {isEditing ? (
+                    <form onSubmit={handleSubmit} className="space-y-6">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div className="space-y-2">
+                          <Label htmlFor="name">Họ tên</Label>
+                          <Input
+                            id="name"
+                            name="name"
+                            value={formData.name}
+                            onChange={handleInputChange}
+                          />
+                        </div>
+                        
+                        <div className="space-y-2">
+                          <Label htmlFor="email">Email</Label>
+                          <Input
+                            id="email"
+                            name="email"
+                            type="email"
+                            value={formData.email}
+                            disabled
+                          />
+                          <p className="text-xs text-muted-foreground">Email không thể thay đổi</p>
+                        </div>
+                        
+                        <div className="space-y-2">
+                          <Label htmlFor="phone">Số điện thoại</Label>
+                          <Input
+                            id="phone"
+                            name="phone"
+                            type="tel"
+                            value={formData.phone}
+                            onChange={handleInputChange}
+                          />
+                        </div>
+                        
+                        {isDonor && (
+                          <div className="space-y-2">
+                            <Label htmlFor="dateOfBirth">Ngày sinh</Label>
+                            <Input
+                              id="dateOfBirth"
+                              name="dateOfBirth"
+                              value={formData.dateOfBirth}
+                              onChange={handleInputChange}
+                            />
+                          </div>
+                        )}
+                        
+                        <div className={`space-y-2 ${!isDonor ? "md:col-span-2" : ""}`}>
+                          <Label htmlFor="address">Địa chỉ</Label>
+                          <Input
+                            id="address"
+                            name="address"
+                            value={formData.address}
+                            onChange={handleInputChange}
+                          />
+                        </div>
+                        
+                        {isDonor && (
+                          <div className="space-y-2">
+                            <Label htmlFor="bloodType">Nhóm máu</Label>
+                            <Select 
+                              value={formData.bloodType} 
+                              onValueChange={(value) => handleSelectChange("bloodType", value)}
+                            >
+                              <SelectTrigger id="bloodType">
+                                <SelectValue placeholder="Chọn nhóm máu" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="A+">A+</SelectItem>
+                                <SelectItem value="A-">A-</SelectItem>
+                                <SelectItem value="B+">B+</SelectItem>
+                                <SelectItem value="B-">B-</SelectItem>
+                                <SelectItem value="AB+">AB+</SelectItem>
+                                <SelectItem value="AB-">AB-</SelectItem>
+                                <SelectItem value="O+">O+</SelectItem>
+                                <SelectItem value="O-">O-</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        )}
+                        
+                        {isVolunteer && (
+                          <>
+                            <div className="space-y-2">
+                              <Label htmlFor="position">Vị trí</Label>
+                              <Input
+                                id="position"
+                                name="position"
+                                value={formData.position}
+                                onChange={handleInputChange}
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <Label htmlFor="organizationName">Tên tổ chức</Label>
+                              <Input
+                                id="organizationName"
+                                name="organizationName"
+                                value={formData.organizationName}
+                                onChange={handleInputChange}
+                              />
+                            </div>
+                          </>
+                        )}
+                      </div>
 
-      <div className="grid grid-cols-1 gap-6">
-        <Card>
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <CardTitle>Thông tin cá nhân</CardTitle>
-              {!isEditing && (
-                <Button onClick={() => setIsEditing(true)}>Chỉnh sửa</Button>
-              )}
-            </div>
-          </CardHeader>
-          <CardContent>
-            {isEditing ? (
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
-                      Họ tên
-                    </label>
-                    <input
-                      type="text"
-                      id="name"
-                      name="name"
-                      value={formData.name}
-                      onChange={handleInputChange}
-                      className="w-full p-2 border rounded-md"
-                    />
-                  </div>
-                  <div>
-                    <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
-                      Email
-                    </label>
-                    <input
-                      type="email"
-                      id="email"
-                      name="email"
-                      value={formData.email}
-                      onChange={handleInputChange}
-                      className="w-full p-2 border rounded-md"
-                      disabled
-                    />
-                    <p className="text-xs text-gray-500 mt-1">Email không thể thay đổi</p>
-                  </div>
-                  <div>
-                    <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-1">
-                      Số điện thoại
-                    </label>
-                    <input
-                      type="tel"
-                      id="phone"
-                      name="phone"
-                      value={formData.phone}
-                      onChange={handleInputChange}
-                      className="w-full p-2 border rounded-md"
-                    />
-                  </div>
-                  <div>
-                    <label htmlFor="dateOfBirth" className="block text-sm font-medium text-gray-700 mb-1">
-                      Ngày sinh
-                    </label>
-                    <input
-                      type="text"
-                      id="dateOfBirth"
-                      name="dateOfBirth"
-                      value={formData.dateOfBirth}
-                      onChange={handleInputChange}
-                      className="w-full p-2 border rounded-md"
-                    />
-                  </div>
-                  <div className="md:col-span-2">
-                    <label htmlFor="address" className="block text-sm font-medium text-gray-700 mb-1">
-                      Địa chỉ
-                    </label>
-                    <input
-                      type="text"
-                      id="address"
-                      name="address"
-                      value={formData.address}
-                      onChange={handleInputChange}
-                      className="w-full p-2 border rounded-md"
-                    />
-                  </div>
-                  
-                  {user?.role === "donor" && (
-                    <div>
-                      <label htmlFor="bloodType" className="block text-sm font-medium text-gray-700 mb-1">
-                        Nhóm máu
-                      </label>
-                      <select
-                        id="bloodType"
-                        name="bloodType"
-                        value={formData.bloodType}
-                        onChange={handleInputChange}
-                        className="w-full p-2 border rounded-md"
-                      >
-                        <option value="A+">A+</option>
-                        <option value="A-">A-</option>
-                        <option value="B+">B+</option>
-                        <option value="B-">B-</option>
-                        <option value="AB+">AB+</option>
-                        <option value="AB-">AB-</option>
-                        <option value="O+">O+</option>
-                        <option value="O-">O-</option>
-                      </select>
+                      <div className="flex justify-end space-x-4 pt-4">
+                        <Button type="button" variant="outline" onClick={() => setIsEditing(false)}>
+                          Hủy
+                        </Button>
+                        <Button type="submit">
+                          Lưu thay đổi
+                        </Button>
+                      </div>
+                    </form>
+                  ) : (
+                    <div className="space-y-8">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div className="flex gap-3 items-start">
+                          <div className="bg-primary/10 p-2 rounded-full">
+                            <User className="h-5 w-5 text-primary" />
+                          </div>
+                          <div>
+                            <p className="text-sm text-muted-foreground">Họ tên</p>
+                            <p className="font-medium">{formData.name}</p>
+                          </div>
+                        </div>
+                        
+                        <div className="flex gap-3 items-start">
+                          <div className="bg-primary/10 p-2 rounded-full">
+                            <Mail className="h-5 w-5 text-primary" />
+                          </div>
+                          <div>
+                            <p className="text-sm text-muted-foreground">Email</p>
+                            <p className="font-medium">{formData.email}</p>
+                          </div>
+                        </div>
+                        
+                        <div className="flex gap-3 items-start">
+                          <div className="bg-primary/10 p-2 rounded-full">
+                            <Phone className="h-5 w-5 text-primary" />
+                          </div>
+                          <div>
+                            <p className="text-sm text-muted-foreground">Số điện thoại</p>
+                            <p className="font-medium">{formData.phone}</p>
+                          </div>
+                        </div>
+                        
+                        {isDonor && (
+                          <div className="flex gap-3 items-start">
+                            <div className="bg-primary/10 p-2 rounded-full">
+                              <Calendar className="h-5 w-5 text-primary" />
+                            </div>
+                            <div>
+                              <p className="text-sm text-muted-foreground">Ngày sinh</p>
+                              <p className="font-medium">{formData.dateOfBirth}</p>
+                            </div>
+                          </div>
+                        )}
+                        
+                        <div className={`flex gap-3 items-start ${!isDonor ? "md:col-span-2" : ""}`}>
+                          <div className="bg-primary/10 p-2 rounded-full">
+                            <MapPin className="h-5 w-5 text-primary" />
+                          </div>
+                          <div>
+                            <p className="text-sm text-muted-foreground">Địa chỉ</p>
+                            <p className="font-medium">{formData.address}</p>
+                          </div>
+                        </div>
+                        
+                        {isDonor && (
+                          <div className="flex gap-3 items-start">
+                            <div className="bg-red-100 p-2 rounded-full">
+                              <Droplet className="h-5 w-5 text-red-500" />
+                            </div>
+                            <div>
+                              <p className="text-sm text-muted-foreground">Nhóm máu</p>
+                              <p className="font-medium">{formData.bloodType || "Chưa cập nhật"}</p>
+                            </div>
+                          </div>
+                        )}
+                        
+                        <div className="flex gap-3 items-start">
+                          <div className="bg-blue-100 p-2 rounded-full">
+                            <User className="h-5 w-5 text-blue-500" />
+                          </div>
+                          <div>
+                            <p className="text-sm text-muted-foreground">Vai trò</p>
+                            <p className="font-medium">
+                              {isDonor ? "Người hiến máu" : isVolunteer ? "Quản lý tình nguyện" : "Người dùng"}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+
+                      {isDonor && (
+                        <Card className="mt-6 border-border/40">
+                          <CardHeader className="pb-2">
+                            <CardTitle className="text-base flex items-center gap-2">
+                              <Droplet className="h-5 w-5 text-red-500" />
+                              Thông tin hiến máu
+                            </CardTitle>
+                          </CardHeader>
+                          <CardContent>
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                              <div className="flex items-center gap-3">
+                                <div className="bg-blue-100 p-2 rounded-full">
+                                  <Calendar className="h-4 w-4 text-blue-500" />
+                                </div>
+                                <div>
+                                  <p className="text-xs text-muted-foreground">Tổng số lần hiến máu</p>
+                                  <p className="font-medium">{donorData.totalDonations}</p>
+                                </div>
+                              </div>
+                              
+                              <div className="flex items-center gap-3">
+                                <div className="bg-green-100 p-2 rounded-full">
+                                  <Calendar className="h-4 w-4 text-green-500" />
+                                </div>
+                                <div>
+                                  <p className="text-xs text-muted-foreground">Lần hiến máu gần nhất</p>
+                                  <p className="font-medium">{donorData.lastDonationDate}</p>
+                                </div>
+                              </div>
+                              
+                              <div className="flex items-center gap-3">
+                                <div className="bg-purple-100 p-2 rounded-full">
+                                  <Calendar className="h-4 w-4 text-purple-500" />
+                                </div>
+                                <div>
+                                  <p className="text-xs text-muted-foreground">Lần hiến máu tiếp theo</p>
+                                  <p className="font-medium">{donorData.nextPossibleDonationDate}</p>
+                                </div>
+                              </div>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      )}
+
+                      {isVolunteer && (
+                        <Card className="mt-6 border-border/40">
+                          <CardHeader className="pb-2">
+                            <CardTitle className="text-base flex items-center gap-2">
+                              <Building className="h-5 w-5 text-blue-500" />
+                              Thông tin tổ chức
+                            </CardTitle>
+                          </CardHeader>
+                          <CardContent>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                              <div className="flex items-center gap-3">
+                                <div className="bg-blue-100 p-2 rounded-full">
+                                  <User className="h-4 w-4 text-blue-500" />
+                                </div>
+                                <div>
+                                  <p className="text-xs text-muted-foreground">Vị trí</p>
+                                  <p className="font-medium">{formData.position}</p>
+                                </div>
+                              </div>
+                              
+                              <div className="flex items-center gap-3">
+                                <div className="bg-green-100 p-2 rounded-full">
+                                  <Building className="h-4 w-4 text-green-500" />
+                                </div>
+                                <div>
+                                  <p className="text-xs text-muted-foreground">Tổ chức</p>
+                                  <p className="font-medium">{formData.organizationName}</p>
+                                </div>
+                              </div>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      )}
+
+                      <div className="pt-6">
+                        <Button variant="outline" onClick={handleChangePassword}>
+                          Đổi mật khẩu
+                        </Button>
+                      </div>
                     </div>
                   )}
-                </div>
-
-                <div className="flex justify-end space-x-2 mt-6">
-                  <Button type="button" variant="outline" onClick={() => setIsEditing(false)}>
-                    Hủy
-                  </Button>
-                  <Button type="submit">
-                    Lưu thay đổi
-                  </Button>
-                </div>
-              </form>
-            ) : (
-              <div className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <p className="text-sm font-medium text-gray-500">Họ tên</p>
-                    <p className="text-base">{formData.name}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-gray-500">Email</p>
-                    <p className="text-base">{formData.email}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-gray-500">Số điện thoại</p>
-                    <p className="text-base">{formData.phone}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-gray-500">Ngày sinh</p>
-                    <p className="text-base">{formData.dateOfBirth}</p>
-                  </div>
-                  <div className="md:col-span-2">
-                    <p className="text-sm font-medium text-gray-500">Địa chỉ</p>
-                    <p className="text-base">{formData.address}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-gray-500">Vai trò</p>
-                    <p className="text-base">
-                      {user?.role === "donor" && "Người hiến máu"}
-                      {user?.role === "medical_staff" && "Nhân viên y tế"}
-                      {user?.role === "doctor" && "Bác sĩ"}
-                      {user?.role === "volunteer_center_manager" && "Trưởng cơ sở tình nguyện"}
-                      {user?.role === "blood_bank_director" && "Giám đốc ngân hàng máu"}
-                      {user?.role === "admin" && "Quản trị viên"}
-                    </p>
-                  </div>
-                </div>
-
-                {renderRoleSpecificInfo()}
-
-                <div className="mt-6 pt-6 border-t">
-                  <Button variant="outline" onClick={handleChangePassword}>
-                    Đổi mật khẩu
-                  </Button>
-                </div>
-              </div>
-            )}
-          </CardContent>
-        </Card>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+        </main>
       </div>
     </div>
   );

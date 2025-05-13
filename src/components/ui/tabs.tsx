@@ -1,6 +1,7 @@
 "use client"
 
 import * as React from "react"
+import { Slot } from "@radix-ui/react-slot"
 import { cn } from "@/lib/utils"
 
 /**
@@ -62,10 +63,11 @@ TabsList.displayName = "TabsList"
  */
 interface TabsTriggerProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   value: string
+  asChild?: boolean
 }
 
 const TabsTrigger = React.forwardRef<HTMLButtonElement, TabsTriggerProps>(
-  ({ children, value, className, ...props }, ref) => {
+  ({ children, value, className, asChild = false, ...props }, ref) => {
     const context = React.useContext(TabsContext)
     const isActive = value === context?.value
     
@@ -73,8 +75,10 @@ const TabsTrigger = React.forwardRef<HTMLButtonElement, TabsTriggerProps>(
       context?.onValueChange?.(value)
     }
 
+    const Comp = asChild ? Slot : "button"
+
     return (
-      <button 
+      <Comp 
         ref={ref}
         type="button"
         role="tab"
@@ -94,7 +98,7 @@ const TabsTrigger = React.forwardRef<HTMLButtonElement, TabsTriggerProps>(
         {...props}
       >
         {children}
-      </button>
+      </Comp>
     )
   }
 )

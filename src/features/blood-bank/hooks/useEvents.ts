@@ -3,7 +3,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { eventService } from '../services/eventService';
-import type { DANGKITOCHUCHIENMAU, FormDuLieuSuKien, TrangThaiSuKien } from '../types';
+import type { FormDuLieuSuKien, TrangThaiSuKien } from '@/types';
 
 // Quản lý các sự kiện hiến máu
 export function useEvents() {

@@ -1,62 +1,74 @@
-import { mockRegistrationRequests } from "../mock/data";
-import type { DANGKITOCHUCHIENMAU_WithRelations } from "../types";
+import { mockDangKiToChucHienMau } from "@/mock";
+import type { DANGKITOCHUCHIENMAU_WithRelations, TrangThaiDangKy, TrangThaiSuKien } from "@/types";
 
-// Dịch vụ quản lý yêu cầu đăng ký tổ chức
+/**
+ * Dịch vụ quản lý yêu cầu đăng ký tổ chức
+ */
 export const organizationRequestService = {
-  //Lấy tất cả yêu cầu đăng ký
+  /**
+   * Lấy tất cả yêu cầu đăng ký
+   */
   async getRegistrationRequests(): Promise<DANGKITOCHUCHIENMAU_WithRelations[]> {
-    return Promise.resolve(mockRegistrationRequests);
+    return Promise.resolve(mockDangKiToChucHienMau);
   },
 
-  //Lấy tất cả yêu cầu đăng ký chờ duyệt
+  /**
+   * Lấy tất cả yêu cầu đăng ký chờ duyệt
+   */
   async getPendingRequests(): Promise<DANGKITOCHUCHIENMAU_WithRelations[]> {
-    return Promise.resolve(mockRegistrationRequests.filter(req => req.TinhTrangDK === "pending"));
+    return Promise.resolve(mockDangKiToChucHienMau.filter(req => req.TinhTrangDK === "pending"));
   },
 
-  // Lấy yêu cầu đăng ký theo ID thông báo
+  /**
+   * Lấy yêu cầu đăng ký theo ID thông báo
+   */
   async getRequestsByNotificationId(notificationId: string): Promise<DANGKITOCHUCHIENMAU_WithRelations[]> {
     return Promise.resolve(
-      mockRegistrationRequests.filter(req => req.IdThongBaoDK === notificationId)
+      mockDangKiToChucHienMau.filter(req => req.IdThongBaoDK === notificationId)
     );
   },
 
-  //Phê duyệt yêu cầu đăng ký
+  /**
+   * Phê duyệt yêu cầu đăng ký
+   */
   async approveRequest(id: string): Promise<DANGKITOCHUCHIENMAU_WithRelations> {
-    const request = mockRegistrationRequests.find(req => req.IdSuKien === id);
+    const request = mockDangKiToChucHienMau.find(req => req.IdSuKien === id);
     if (!request) {
       return Promise.reject(new Error("Không tìm thấy yêu cầu đăng ký"));
     }
 
     const updatedRequest: DANGKITOCHUCHIENMAU_WithRelations = {
       ...request,
-      TinhTrangDK: 'approved'
+      TinhTrangDK: 'approved' as TrangThaiDangKy
     };
 
     // Trong thực tế, đây sẽ là API call
     return Promise.resolve(updatedRequest);
   },
 
-    /**
-     * Reject a registration request
-     */
+  /**
+   * Từ chối yêu cầu đăng ký
+   */
   async rejectRequest(id: string, reason: string): Promise<DANGKITOCHUCHIENMAU_WithRelations> {
-    const request = mockRegistrationRequests.find(req => req.IdSuKien === id);
+    const request = mockDangKiToChucHienMau.find(req => req.IdSuKien === id);
     if (!request) {
       return Promise.reject(new Error("Không tìm thấy yêu cầu đăng ký"));
     }
 
     const updatedRequest: DANGKITOCHUCHIENMAU_WithRelations = {
       ...request,
-      TinhTrangDK: 'rejected'
+      TinhTrangDK: 'rejected' as TrangThaiDangKy
     };
 
     // Trong thực tế, đây sẽ là API call và lưu lý do từ chối
     return Promise.resolve(updatedRequest);
   },
   
-  //Tạo sự kiện từ yêu cầu đăng ký
+  /**
+   * Tạo sự kiện từ yêu cầu đăng ký
+   */
   async createEvent(registrationId: string, eventData: any): Promise<DANGKITOCHUCHIENMAU_WithRelations> {
-    const request = mockRegistrationRequests.find(req => req.IdSuKien === registrationId);
+    const request = mockDangKiToChucHienMau.find(req => req.IdSuKien === registrationId);
     if (!request) {
       return Promise.reject(new Error("Không tìm thấy yêu cầu đăng ký"));
     }
@@ -70,19 +82,12 @@ export const organizationRequestService = {
 
     //Tạo sự kiện mới
     const newEvent: DANGKITOCHUCHIENMAU_WithRelations = {
-      IdSuKien: registrationId,
-      IdThongBaoDK: request.IdThongBaoDK,
-      IDCoSoTinhNguyen: request.IDCoSoTinhNguyen,
-      NgayDangKi: request.NgayDangKi,
-      TinhTrangDK: 'approved',
-      SoLuongDK: 0,
-      SoLuongDDK: 0,
-      TrangThaiSuKien: "upcoming",
-      NgayDang: new Date().toISOString(),
+      ...request,
+      TrangThaiSuKien: "upcoming" as TrangThaiSuKien,
       NgaySua: new Date().toISOString(),
       HanDK: eventData.HanDK || new Date().toISOString(),
-      ThongBao: request.ThongBao,
-      CoSoTinhNguyen: request.CoSoTinhNguyen
+      SoLuongDK: eventData.SoLuongDK || 0,
+      SoLuongDDK: eventData.SoLuongDDK || 0
     };
 
     // Trong thực tế, đây sẽ là API call

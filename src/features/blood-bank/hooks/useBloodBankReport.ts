@@ -44,7 +44,7 @@ export function useBloodBankReport() {
   };
 
   // Xuất báo cáo
-  const exportReport = async (format: 'pdf' | 'excel', startDate?: string, endDate?: string) => {
+  const exportReport = async (format: 'pdf' | 'excel', startDate?: string, endDate?: string): Promise<string> => {
     try {
       const filename = await reportService.exportReport(format, startDate, endDate);
       toast.success(`Báo cáo đã được xuất thành công: ${filename}`);

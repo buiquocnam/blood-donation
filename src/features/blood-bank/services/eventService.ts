@@ -1,5 +1,5 @@
-import { mockRegistrationRequests } from "../mock/data";
-import type { DANGKITOCHUCHIENMAU_WithRelations, FormDuLieuSuKien, TrangThaiSuKien } from "../types";
+import { mockDangKiToChucHienMau } from "@/mock";
+import type { DANGKITOCHUCHIENMAU_WithRelations, TrangThaiSuKien } from "@/types";
 
 /**
  * Service quản lý sự kiện hiến máu
@@ -9,7 +9,7 @@ export const eventService = {
    * Lấy tất cả sự kiện hiến máu
    */
   async getEvents(): Promise<DANGKITOCHUCHIENMAU_WithRelations[]> {
-    return Promise.resolve(mockRegistrationRequests);
+    return Promise.resolve(mockDangKiToChucHienMau);
   },
 
   /**
@@ -17,7 +17,7 @@ export const eventService = {
    */
   async getEventsByStatus(status: TrangThaiSuKien): Promise<DANGKITOCHUCHIENMAU_WithRelations[]> {
     return Promise.resolve(
-      mockRegistrationRequests.filter(event => event.TrangThaiSuKien === status)
+      mockDangKiToChucHienMau.filter(event => event.TrangThaiSuKien === status)
     );
   },
 
@@ -25,7 +25,7 @@ export const eventService = {
    * Lấy sự kiện theo ID
    */
   async getEventById(id: string): Promise<DANGKITOCHUCHIENMAU_WithRelations> {
-    const event = mockRegistrationRequests.find(e => e.IdSuKien === id);
+    const event = mockDangKiToChucHienMau.find(e => e.IdSuKien === id);
     if (!event) {
       return Promise.reject(new Error("Không tìm thấy sự kiện"));
     }
@@ -35,37 +35,30 @@ export const eventService = {
   /**
    * Tạo sự kiện mới từ đăng ký đã được duyệt
    */
-  async createEvent(registrationId: string, eventData: FormDuLieuSuKien): Promise<DANGKITOCHUCHIENMAU_WithRelations> {
-    const registration = mockRegistrationRequests.find(req => req.IdSuKien === registrationId);
+  async createEvent(registrationId: string, eventData: any): Promise<DANGKITOCHUCHIENMAU_WithRelations> {
+    const registration = mockDangKiToChucHienMau.find(req => req.IdSuKien === registrationId);
     if (!registration) {
       return Promise.reject(new Error("Không tìm thấy đăng ký"));
     }
 
-    // Thời gian của sự kiện sẽ được lấy từ ThongBao
-    const newEvent = {
-      IdSuKien: registrationId,
-      IdThongBaoDK: registration.IdThongBaoDK,
-      IDCoSoTinhNguyen: registration.IDCoSoTinhNguyen,
-      NgayDangKi: registration.NgayDangKi,
-      TinhTrangDK: "approved",
+    const newEvent: DANGKITOCHUCHIENMAU_WithRelations = {
+      ...registration,
+      TinhTrangDK: "approved" as any,
       SoLuongDK: eventData.SoLuongDK || 0,
       SoLuongDDK: eventData.SoLuongDDK || 0,
-      TrangThaiSuKien: eventData.TrangThaiSuKien || "upcoming",
-      NgayDang: new Date().toISOString(),
+      TrangThaiSuKien: eventData.TrangThaiSuKien || "upcoming" as TrangThaiSuKien,
       NgaySua: new Date().toISOString(),
-      HanDK: eventData.HanDK,
-      CoSoTinhNguyen: registration.CoSoTinhNguyen,
-      ThongBao: registration.ThongBao
+      HanDK: eventData.HanDK || new Date().toISOString()
     };
 
-    return Promise.resolve(newEvent as DANGKITOCHUCHIENMAU_WithRelations);
+    return Promise.resolve(newEvent);
   },
 
   /**
    * Cập nhật sự kiện hiện có
    */
-  async updateEvent(id: string, eventData: Partial<FormDuLieuSuKien>): Promise<DANGKITOCHUCHIENMAU_WithRelations> {
-    const event = mockRegistrationRequests.find(e => e.IdSuKien === id);
+  async updateEvent(id: string, eventData: any): Promise<DANGKITOCHUCHIENMAU_WithRelations> {
+    const event = mockDangKiToChucHienMau.find(e => e.IdSuKien === id);
     if (!event) {
       return Promise.reject(new Error("Không tìm thấy sự kiện"));
     }
@@ -94,14 +87,14 @@ export const eventService = {
     // Giả lập cập nhật
     console.log(`Đã cập nhật sự kiện ${id}`);
 
-    return Promise.resolve(updatedEventData as DANGKITOCHUCHIENMAU_WithRelations);
+    return Promise.resolve(updatedEventData);
   },
 
   /**
    * Hủy sự kiện
    */
   async cancelEvent(id: string, reason: string): Promise<DANGKITOCHUCHIENMAU_WithRelations> {
-    const event = mockRegistrationRequests.find(e => e.IdSuKien === id);
+    const event = mockDangKiToChucHienMau.find(e => e.IdSuKien === id);
     if (!event) {
       return Promise.reject(new Error("Không tìm thấy sự kiện"));
     }
@@ -115,31 +108,31 @@ export const eventService = {
 
     const cancelledEvent = {
       ...event,
-      TrangThaiSuKien: "cancelled",
+      TrangThaiSuKien: "cancelled" as TrangThaiSuKien,
       NgaySua: new Date().toISOString()
     };
 
-    return Promise.resolve(cancelledEvent as DANGKITOCHUCHIENMAU_WithRelations);
+    return Promise.resolve(cancelledEvent);
   },
 
   /**
    * Đánh dấu sự kiện đã hoàn thành
    */
   async completeEvent(id: string): Promise<DANGKITOCHUCHIENMAU_WithRelations> {
-    const event = mockRegistrationRequests.find(e => e.IdSuKien === id);
+    const event = mockDangKiToChucHienMau.find(e => e.IdSuKien === id);
     if (!event) {
       return Promise.reject(new Error("Không tìm thấy sự kiện"));
     }
 
     const completedEvent = {
       ...event,
-      TrangThaiSuKien: "completed",
+      TrangThaiSuKien: "completed" as TrangThaiSuKien,
       NgaySua: new Date().toISOString()
     };
 
     // Giả lập hoàn thành sự kiện
     console.log(`Đã hoàn thành sự kiện ${id}`);
 
-    return Promise.resolve(completedEvent as DANGKITOCHUCHIENMAU_WithRelations);
+    return Promise.resolve(completedEvent);
   }
 }; 

@@ -18,8 +18,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useNotifications } from '../hooks/useNotifications';
 import { THONGBAODKTOCHUC } from '@/types';
 import { EyeIcon, EditIcon, Trash2Icon, MoreVerticalIcon, SearchIcon, BuildingIcon, CalendarIcon } from 'lucide-react';
-import { format } from 'date-fns';
-import { vi } from 'date-fns/locale';
+import { formatDate } from '@/utils';
 import { NotificationForm } from './NotificationForm';
 import { RegistrationApprovalList } from './RegistrationApprovalList';
 
@@ -100,23 +99,6 @@ export function NotificationList({ filterStatus = 'all' }: NotificationListProps
     console.log("Tổng số thông báo:", notifications?.length);
     console.log("Số thông báo sau khi lọc:", filteredNotifications.length);
   }, [filteredNotifications.length, filterStatus, notifications?.length]);
-
-  /**
-   * Định dạng ngày tháng để hiển thị
-   * @param dateString Chuỗi ngày tháng cần định dạng
-   * @returns Chuỗi ngày tháng đã định dạng
-   */
-  const formatDate = (dateString: string) => {
-    try {
-      if (!dateString) return "Không xác định";
-      const date = new Date(dateString);
-      if (isNaN(date.getTime())) return "Không xác định";
-      return format(date, 'dd/MM/yyyy HH:mm', { locale: vi });
-    } catch (error) {
-      console.error("Invalid date format:", dateString, error);
-      return "Không xác định";
-    }
-  };
 
   /**
    * Xử lý xóa thông báo

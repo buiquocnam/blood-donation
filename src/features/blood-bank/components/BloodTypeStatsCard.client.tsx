@@ -7,7 +7,8 @@ import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recha
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { DatePicker } from '@/components/ui/date-time-picker';
-import { Download, Loader2 } from 'lucide-react';
+import { Download, Loader2, CalendarRange } from 'lucide-react';
+import { format, isAfter } from 'date-fns';
 
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8', '#FF6B6B', '#6B8E23', '#9932CC'];
 
@@ -33,6 +34,14 @@ export function BloodTypeStatsCard() {
 
   const stats = filteredStats || bloodTypeStats;
   const isLoading = isBloodTypeStatsLoading || isFilteredStatsLoading;
+  
+  const isDateRangeValid = dateRange.start && dateRange.end && 
+    isAfter(dateRange.end, dateRange.start);
+
+  const clearFilters = () => {
+    setDateRange({});
+    setActiveTab('chart');
+  };
 
   const handleExport = async (format: 'pdf' | 'excel') => {
     try {
@@ -51,14 +60,21 @@ export function BloodTypeStatsCard() {
 
   const renderChart = () => {
     if (isLoading) {
-      return <div className="flex items-center justify-center h-64">
-        <Loader2 className="h-8 w-8 animate-spin text-primary mr-2" />
-        <span>Đang tải dữ liệu...</span>
-      </div>;
+      return (
+        <div className="flex flex-col items-center justify-center h-64">
+          <Loader2 className="h-8 w-8 animate-spin text-primary mb-2" />
+          <span>Đang tải dữ liệu...</span>
+        </div>
+      );
     }
 
     if (!stats || stats.length === 0) {
-      return <div className="flex items-center justify-center h-64">Không có dữ liệu thống kê</div>;
+      return (
+        <div className="flex flex-col items-center justify-center h-64 text-muted-foreground">
+          <CalendarRange className="h-12 w-12 mb-2" />
+          <span>Không có dữ liệu thống kê</span>
+        </div>
+      );
     }
 
     return (
@@ -90,6 +106,26 @@ export function BloodTypeStatsCard() {
     );
   };
 
+  // Hiển thị thanh trạng thái khi đang lọc theo ngày
+  const renderDateRangeIndicator = () => {
+    if (dateRange.start && dateRange.end) {
+      return (
+        <div className="bg-secondary/30 text-sm rounded-lg p-2 flex items-center justify-between mb-4">
+          <div className="flex items-center">
+            <CalendarRange className="h-4 w-4 mr-2" />
+            <span>
+              Lọc từ {format(dateRange.start, 'dd/MM/yyyy')} đến {format(dateRange.end, 'dd/MM/yyyy')}
+            </span>
+          </div>
+          <Button variant="ghost" size="sm" onClick={clearFilters}>
+            Xóa bộ lọc
+          </Button>
+        </div>
+      );
+    }
+    return null;
+  };
+
   return (
     <Card className="w-full shadow-md">
       <CardHeader className="bg-slate-50 dark:bg-slate-900 pb-2">
@@ -99,6 +135,8 @@ export function BloodTypeStatsCard() {
         </CardDescription>
       </CardHeader>
       <CardContent className="pt-4">
+        {renderDateRangeIndicator()}
+        
         <Tabs value={activeTab} onValueChange={setActiveTab}>
           <div className="flex items-center justify-between mb-6">
             <TabsList>
@@ -110,7 +148,7 @@ export function BloodTypeStatsCard() {
                 variant="outline"
                 size="sm"
                 onClick={() => handleExport('pdf')}
-                disabled={isExporting}
+                disabled={isExporting || isLoading}
               >
                 {isExporting ? 
                   <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : 
@@ -122,7 +160,7 @@ export function BloodTypeStatsCard() {
                 variant="outline"
                 size="sm"
                 onClick={() => handleExport('excel')}
-                disabled={isExporting}
+                disabled={isExporting || isLoading}
               >
                 {isExporting ? 
                   <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : 
@@ -153,12 +191,13 @@ export function BloodTypeStatsCard() {
                     selected={dateRange.end}
                     onSelect={(date) => setDateRange((prev) => ({ ...prev, end: date }))}
                     minDate={dateRange.start}
+                    className={!dateRange.start ? "opacity-50 cursor-not-allowed" : ""}
                   />
                 </div>
               </div>
               <div className="flex space-x-2 mt-4">
                 <Button 
-                  onClick={() => setDateRange({})} 
+                  onClick={clearFilters} 
                   variant="outline"
                   className="w-full"
                 >
@@ -167,7 +206,7 @@ export function BloodTypeStatsCard() {
                 <Button 
                   onClick={() => setActiveTab('chart')}
                   className="w-full"
-                  disabled={!dateRange.start || !dateRange.end}
+                  disabled={!isDateRangeValid}
                 >
                   Áp dụng
                 </Button>
@@ -177,24 +216,42 @@ export function BloodTypeStatsCard() {
         </Tabs>
 
         <div className="mt-6 grid grid-cols-2 md:grid-cols-4 gap-4">
-          {stats?.map((bloodType, index) => (
-            <div
-              key={bloodType.MaNhomMau}
-              className="rounded-lg p-3 flex flex-col shadow-sm border"
-              style={{ borderColor: COLORS[index % COLORS.length], backgroundColor: `${COLORS[index % COLORS.length]}10` }}
-            >
-              <div className="text-lg font-medium">{bloodType.MaNhomMau}</div>
-              <div className="text-sm text-muted-foreground">{bloodType.MoTaNhomMau}</div>
-              <div className="text-2xl font-bold mt-1">{bloodType.SoLuong}</div>
-              <div className="text-sm text-muted-foreground flex items-center mt-1">
-                <div 
-                  className="w-2 h-2 rounded-full mr-1"
-                  style={{ backgroundColor: COLORS[index % COLORS.length] }}
-                ></div>
-                {bloodType.PhanTram.toFixed(1)}%
+          {isLoading ? (
+            // Loading skeleton for blood type cards
+            Array(8).fill(0).map((_, index) => (
+              <div 
+                key={index}
+                className="rounded-lg p-3 flex flex-col shadow-sm border animate-pulse"
+              >
+                <div className="h-5 bg-gray-200 rounded w-16 mb-2"></div>
+                <div className="h-4 bg-gray-200 rounded w-24 mb-3"></div>
+                <div className="h-8 bg-gray-200 rounded w-12 mb-1"></div>
+                <div className="h-4 bg-gray-200 rounded w-10"></div>
               </div>
-            </div>
-          ))}
+            ))
+          ) : (
+            stats?.map((bloodType, index) => (
+              <div
+                key={bloodType.MaNhomMau}
+                className="rounded-lg p-3 flex flex-col shadow-sm border transition-all hover:shadow-md"
+                style={{ 
+                  borderColor: COLORS[index % COLORS.length], 
+                  backgroundColor: `${COLORS[index % COLORS.length]}10` 
+                }}
+              >
+                <div className="text-lg font-medium">{bloodType.MaNhomMau}</div>
+                <div className="text-sm text-muted-foreground">{bloodType.MoTaNhomMau}</div>
+                <div className="text-2xl font-bold mt-1">{bloodType.SoLuong}</div>
+                <div className="text-sm text-muted-foreground flex items-center mt-1">
+                  <div 
+                    className="w-2 h-2 rounded-full mr-1"
+                    style={{ backgroundColor: COLORS[index % COLORS.length] }}
+                  ></div>
+                  {bloodType.PhanTram.toFixed(1)}%
+                </div>
+              </div>
+            ))
+          )}
         </div>
       </CardContent>
     </Card>

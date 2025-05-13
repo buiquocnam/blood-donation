@@ -3,7 +3,7 @@
 import { useEffect } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { useAuthStore } from "@/features/auth/store/auth-store";
-import { UserRole } from "@/features/auth/types";
+import { AuthUser } from "@/features/auth/types";
 
 type Props = {
   children: React.ReactNode;
@@ -19,22 +19,22 @@ const publicPaths = ["/", "/about", "/events", "/auth/login", "/auth/register", 
 const systemPaths = ["/not-found", "/error"];
 
 // Trang mặc định cho từng vai trò
-const roleDefaultPages: Record<UserRole, string> = {
-  donor: "/events",
-  medical_staff: "/medical-staff",
-  doctor: "/doctor",
-  volunteer_center_manager: "/volunteer-center",
-  blood_bank_director: "/blood-bank/notifications",
-  admin: "/admin",
+const roleDefaultPages: Record<string, string> = {
+  ROLE_DONOR: "/events",
+  ROLE_MEDICAL: "/medical-staff",
+  ROLE_DOCTOR: "/doctor",
+  ROLE_VOLUNTEER: "/volunteer-center",
+  ROLE_DIRECTOR: "/blood-bank/notifications",
+  ROLE_ADMIN: "/admin",
 };
 
 // Ánh xạ vai trò người dùng đến các đường dẫn được phép
-const rolePathMapping: Record<UserRole, string[]> = {
-  donor: ["/profile", "/events", "/donor"],
-  medical_staff: ["/profile", "/medical-staff"],
-  doctor: ["/profile", "/doctor"],
-  volunteer_center_manager: ["/profile", "/volunteer-center"],
-  blood_bank_director: [
+const rolePathMapping: Record<string, string[]> = {
+  ROLE_DONOR: ["/profile", "/events", "/donor"],
+  ROLE_MEDICAL: ["/profile", "/medical-staff"],
+  ROLE_DOCTOR: ["/profile", "/doctor"],
+  ROLE_VOLUNTEER: ["/profile", "/volunteer-center"],
+  ROLE_DIRECTOR: [
     "/profile", 
     "/blood-bank", 
     "/blood-bank/notifications", 
@@ -43,7 +43,7 @@ const rolePathMapping: Record<UserRole, string[]> = {
     "/blood-bank/requests", 
     "/blood-bank/reports"
   ],
-  admin: ["/profile", "/admin"],
+  ROLE_ADMIN: ["/profile", "/admin"],
 };
 
 // Middleware để kiểm tra xác thực
@@ -76,36 +76,21 @@ export function AuthMiddleware({ children }: Props) {
   
     // Nếu đã đăng nhập và ở trang auth (login/register)
     if (isAuthenticated && isAuthPath && user) {
-      const searchParams = new URLSearchParams(
-        typeof window !== "undefined" ? window.location.search : ""
-      );
-      const redirectParam = searchParams.get("redirect") || roleDefaultPages[user.role] || "/";
-      
-      const allowedPaths = rolePathMapping[user.role] || [];
-      const isValidRedirect = protectedPaths.concat(publicPaths).some(
-        path => redirectParam === path || redirectParam.startsWith(`${path}/`)
-      );
-      const isAllowedRedirect = allowedPaths.some(
-        path => redirectParam === path || redirectParam.startsWith(`${path}/`)
-      );
-  
-      redirectTo(
-        isValidRedirect && isAllowedRedirect
-          ? redirectParam
-          : roleDefaultPages[user.role] || "/"
-      );
+      // Chuyển hướng đến trang mặc định dựa trên vai trò
+      redirectTo(roleDefaultPages[user.MaVaiTro] || "/");
       return;
     }
   
     // Nếu đã đăng nhập và vào trang protected nhưng không đúng vai trò
     if (isAuthenticated && user && isProtectedPath) {
-      const allowedPaths = rolePathMapping[user.role] || [];
+      const allowedPaths = rolePathMapping[user.MaVaiTro] || [];
       const hasPermission = allowedPaths.some(
         path => pathname === path || pathname.startsWith(`${path}/`)
       );
   
       if (!hasPermission) {
-        redirectTo(roleDefaultPages[user.role] || "/");
+        redirectTo(roleDefaultPages[user.MaVaiTro] || "/");
+        return;
       }
     }
   }, [pathname, isAuthenticated, isLoading, router, user]);
@@ -146,7 +131,7 @@ export function AuthMiddleware({ children }: Props) {
 
     // Kiểm tra quyền truy cập trang dựa trên vai trò
     if (isAuthenticated && user && isProtectedPath) {
-      const role = user.role;
+      const role = user.MaVaiTro;
       const allowedPaths = rolePathMapping[role] || [];
       
       // Kiểm tra xem người dùng có quyền truy cập vào đường dẫn hiện tại không
@@ -154,44 +139,15 @@ export function AuthMiddleware({ children }: Props) {
       
       if (!hasPermission) {
         // Chuyển hướng đến trang mặc định của vai trò
-        const defaultPage = roleDefaultPages[role] || "/";
-        router.push(defaultPage);
+        router.push(roleDefaultPages[user.MaVaiTro] || "/");
         return;
       }
     }
 
     // Nếu đã đăng nhập và đang ở trang đăng nhập/đăng ký, chuyển hướng đến trang mặc định của vai trò
     if (isAuthenticated && isAuthPath && user) {
-      // Lấy redirect từ URL nếu có
-      const searchParams = new URLSearchParams(
-        typeof window !== "undefined" ? window.location.search : ""
-      );
-      const redirectPath = searchParams.get("redirect") || roleDefaultPages[user.role] || "/";
-      
-      // Kiểm tra xem đường dẫn redirect có tồn tại trong hệ thống không
-      const isValidRedirect = 
-        protectedPaths.some(path => redirectPath.startsWith(path)) || 
-        publicPaths.some(path => redirectPath === path || redirectPath.startsWith(`${path}/`));
-      
-      if (!isValidRedirect) {
-        // Nếu đường dẫn redirect không hợp lệ, chuyển về trang mặc định của vai trò
-        router.push(roleDefaultPages[user.role] || "/");
-        return;
-      }
-      
-      // Kiểm tra xem đường dẫn redirect có phải là đường dẫn được phép không theo vai trò
-      const role = user.role;
-      const allowedPaths = rolePathMapping[role] || [];
-      const isAllowedRedirect = allowedPaths.some(path => redirectPath.startsWith(path)) || 
-                               publicPaths.some(path => redirectPath === path || redirectPath.startsWith(`${path}/`));
-      
-      // Nếu đường dẫn redirect không được phép, chuyển hướng đến trang mặc định của vai trò
-      // Thay vì cố gắng chuyển hướng đến một đường dẫn không được phép
-      if (!isAllowedRedirect) {
-        router.push(roleDefaultPages[role] || "/");
-      } else {
-        router.push(redirectPath);
-      }
+      // Chuyển hướng đến trang mặc định dựa trên vai trò
+      router.push(roleDefaultPages[user.MaVaiTro] || "/");
       return;
     }
   }, [pathname, isAuthenticated, isLoading, router, user]);
@@ -202,7 +158,7 @@ export function AuthMiddleware({ children }: Props) {
 // HOC để bảo vệ một component cụ thể
 export function withAuth<P extends object>(
   Component: React.ComponentType<P>,
-  requiredRoles?: UserRole[]
+  requiredRoles?: string[]
 ) {
   return function ProtectedComponent(props: P) {
     const { isAuthenticated, user } = useAuthStore();
@@ -216,8 +172,8 @@ export function withAuth<P extends object>(
 
       // Nếu có yêu cầu vai trò cụ thể
       if (requiredRoles && requiredRoles.length > 0 && user) {
-        if (!requiredRoles.includes(user.role)) {
-          const defaultPage = roleDefaultPages[user.role] || "/";
+        if (!requiredRoles.includes(user.MaVaiTro)) {
+          const defaultPage = roleDefaultPages[user.MaVaiTro] || "/";
           router.push(defaultPage);
           return;
         }
@@ -230,7 +186,7 @@ export function withAuth<P extends object>(
     }
 
     // Nếu có yêu cầu vai trò và người dùng không có vai trò được yêu cầu
-    if (requiredRoles && requiredRoles.length > 0 && user && !requiredRoles.includes(user.role)) {
+    if (requiredRoles && requiredRoles.length > 0 && user && !requiredRoles.includes(user.MaVaiTro)) {
       return null;
     }
 

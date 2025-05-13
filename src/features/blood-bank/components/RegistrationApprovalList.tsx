@@ -1,16 +1,14 @@
 "use client"
 
 import { useState, useEffect } from 'react';
-import { format } from 'date-fns';
-import { vi } from 'date-fns/locale';
 import { CheckCircle, XCircle, InfoIcon } from 'lucide-react';
 
 // Types
-import type { DANGKITOCHUCHIENMAU_WithRelations } from '@/types';
+import type { DANGKITOCHUCHIENMAU_WithRelations, TrangThaiDangKy } from '@/types';
 
 // Hooks và services
 import { useOrganizationRequests } from '../hooks/useOrganizationRequests';
-import { mockRegistrationRequests } from '../mock/data';
+import { mockDangKiToChucHienMau } from '@/mock';
 
 // UI Components
 import { Badge } from '@/components/ui/badge';
@@ -23,6 +21,9 @@ import { Pagination } from '@/components/ui/pagination';
 import { DateTimePicker } from '@/components/ui/date-time-picker';
 import { Label } from '@/components/ui/label';
 import { ScrollArea } from '@/components/ui/scroll-area';
+
+// Thêm import formatDate từ utils và xóa import format, vi từ date-fns
+import { formatDate } from '@/utils';
 
 // Status mapping for UI rendering
 type StatusType = 'pending' | 'approved' | 'rejected';
@@ -152,7 +153,7 @@ export function RegistrationApprovalList({ notificationId }: RegistrationApprova
     if (notificationId) {
       return notificationRequests;
     } else {
-      return pendingRequests || mockRegistrationRequests.filter(req => 
+      return pendingRequests || mockDangKiToChucHienMau.filter(req => 
         getStatusText(req.TinhTrangDK) === 'pending'
       );
     }
@@ -191,7 +192,7 @@ export function RegistrationApprovalList({ notificationId }: RegistrationApprova
     setNotificationRequests(prev => 
       prev.map(req => 
         req.IdSuKien === selectedRequest.IdSuKien 
-          ? { ...req, TinhTrangDK: 'rejected' } 
+          ? { ...req, TinhTrangDK: 'rejected' as TrangThaiDangKy } 
           : req
       )
     );
@@ -213,7 +214,7 @@ export function RegistrationApprovalList({ notificationId }: RegistrationApprova
     setNotificationRequests(prev => 
       prev.map(req => 
         req.IdSuKien === selectedRequest.IdSuKien 
-          ? { ...req, TinhTrangDK: 'approved' } 
+          ? { ...req, TinhTrangDK: 'approved' as TrangThaiDangKy } 
           : req
       )
     );
@@ -284,7 +285,7 @@ export function RegistrationApprovalList({ notificationId }: RegistrationApprova
                 )}
                 <TableCell className="py-4">
                   {request.NgayDangKi 
-                    ? format(new Date(request.NgayDangKi), 'dd/MM/yyyy HH:mm', { locale: vi })
+                    ? formatDate(request.NgayDangKi)
                     : 'Không xác định'
                   }
                 </TableCell>

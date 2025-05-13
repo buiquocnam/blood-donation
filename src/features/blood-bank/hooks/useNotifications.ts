@@ -3,7 +3,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { notificationService } from '../services/notificationService';
-import type { THONGBAODKTOCHUC, FormDuLieuThongBao } from '../types';
+import type { FormDuLieuThongBao } from '@/types';
 
 /**
  * Hook quản lý các thông báo hiến máu

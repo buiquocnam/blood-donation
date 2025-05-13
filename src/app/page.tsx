@@ -1,12 +1,41 @@
+"use client";
+
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import Image from "next/image";
 import { cn } from "@/lib/utils";
 import { Card } from "@/components/ui/card";
+import { useAuthStore } from "@/features/auth/store/auth-store";
+import { ChevronRight } from "lucide-react";
 
 export default function Home() {
+  const { user, isAuthenticated } = useAuthStore();
+  const isDonor = isAuthenticated && user?.MaVaiTro === "ROLE_DONOR";
+
   return (
     <div className="flex flex-col min-h-screen">
+      {/* Donor Banner (conditional) */}
+      {isDonor && (
+        <section className="bg-primary/10">
+          <div className="container mx-auto px-4 py-4">
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+              <div>
+                <h3 className="font-semibold">Chào mừng trở lại!</h3>
+                <p className="text-sm text-muted-foreground">
+                  Quản lý đăng ký hiến máu và xem thông tin cá nhân của bạn
+                </p>
+              </div>
+              <Button asChild size="sm">
+                <Link href="/donor/dashboard">
+                  Đến khu vực người hiến máu
+                  <ChevronRight className="ml-2 h-4 w-4" />
+                </Link>
+              </Button>
+            </div>
+          </div>
+        </section>
+      )}
+
       {/* Hero Section */}
       <section className="bg-gradient-to-b from-background to-accent/20">
         <div className="container mx-auto px-4 py-16 md:py-24">

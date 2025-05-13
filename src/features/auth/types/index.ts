@@ -1,35 +1,61 @@
-export type UserRole = 
-  | "donor" // người hiến máu
-  | "medical_staff" // nhân viên y tế
-  | "doctor" // bác sĩ
-  | "volunteer_center_manager" // trưởng cơ sở tình nguyện
-  | "blood_bank_director" // giám đốc ngân hàng máu
-  | "admin"; // quản trị viên
+import { NGUOIDUNG, COSOTINHNGUYEN } from "@/types";
+/**
+ * State quản lý xác thực người dùng
+ */
 
-export interface User {
-  id: string;
-  name: string; // tên
-  email: string;
-  role: UserRole; // vai trò
-}
+export type AuthUser = NGUOIDUNG | COSOTINHNGUYEN;
+
+export type UserRole = "ROLE_DONOR" | "ROLE_MEDICAL" | "ROLE_DOCTOR" | "ROLE_VOLUNTEER" | "ROLE_DIRECTOR" | "ROLE_ADMIN";
 
 export interface AuthState {
-  user: User | null;
+  user: AuthUser | null;
   isAuthenticated: boolean; // đã xác thực hay chưa
   isLoading: boolean; // đang tải
-  login: (credentials: LoginCredentials) => Promise<void>;
+  login: (credentials: LoginCredentials) => Promise<AuthUser>;
   logout: () => void;
-  register: (userData: RegisterData) => Promise<void>;
+  register: (userData: RegisterData) => Promise<NGUOIDUNG>;
+  registerVolunteerCenter: (data: VolunteerCenterRegisterData) => Promise<COSOTINHNGUYEN>;
 }
 
+/**
+ * Thông tin đăng nhập
+ */
 export interface LoginCredentials {
   email: string;
   password: string; // mật khẩu
 }
 
+/**
+ * Dữ liệu đăng ký cho người dùng thông thường (người hiến máu)
+ */
 export interface RegisterData {
-  name: string; // tên
-  email: string;
-  password: string; // mật khẩu
-  role: UserRole; // vai trò
-} 
+  HoTen: string;
+  Email: string;
+  MatKhau: string;
+  XacNhanMatKhau: string;
+  SDT: string;
+  NgaySinh: string;
+  GioiTinh: string;
+  CCCD: string;
+  MaNhomMau?: string;
+  tenDiaChi: string;
+  IdPhuong: string; 
+  MaVaiTro: string;
+}
+
+/**
+ * Dữ liệu đăng ký cho trưởng cơ sở tình nguyện
+ */
+export interface VolunteerCenterRegisterData {
+  TenCoSoTinhNguyen: string;
+  DiaChi: string;
+  IdPhuong: string;
+  MinhChung: string;
+  Email: string;
+  SDT: string;
+  UserName: string;
+  NguoiPhuTrach: string; // Tên người phụ trách
+  MatKhau: string;
+  XacNhanMatKhau: string;
+  MaVaiTro: string;
+}

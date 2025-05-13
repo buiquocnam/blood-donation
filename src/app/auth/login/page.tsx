@@ -14,7 +14,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardHeader, CardContent, CardFooter } from "@/components/ui/card";
 import { useAuthStore } from "@/features/auth/store/auth-store";
-import { UserRole } from "@/features/auth/types";
 
 // Schema xác thực form
 const loginSchema = z.object({
@@ -23,7 +22,7 @@ const loginSchema = z.object({
 });
 
 // Trang mặc định cho từng vai trò
-const roleDefaultPages: Record<UserRole, string> = {
+const roleDefaultPages: Record<string, string> = {
   donor: "/events",
   medical_staff: "/medical-staff",
   doctor: "/doctor",
@@ -60,7 +59,7 @@ export default function LoginPage() {
       toast.success("Đăng nhập thành công");
       
       // Điều hướng người dùng sau khi đăng nhập
-      const targetPath = redirectPath || roleDefaultPages[user.role] || "/";
+      const targetPath = redirectPath || roleDefaultPages[user.MaVaiTro] || "/";
       router.push(targetPath);
     } catch (error) {
       toast.error("Đăng nhập thất bại. Vui lòng kiểm tra lại email và mật khẩu của bạn.");

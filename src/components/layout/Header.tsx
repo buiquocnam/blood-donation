@@ -4,7 +4,8 @@ import Link from "next/link";
 import { useState, useEffect } from "react";
 import { useAuthStore } from "@/features/auth/store/auth-store";
 import { Button } from "@/components/ui/button";
-import { UserRole } from "@/features/auth/types";
+import { AuthUser } from "@/features/auth/types";
+import { NGUOIDUNG, COSOTINHNGUYEN } from "@/types";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -15,10 +16,26 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { ChevronDown } from "lucide-react";
 
+// Type guard function to check if user is NGUOIDUNG
+function isNguoiDung(user: AuthUser): user is NGUOIDUNG {
+  return 'MaNguoiDung' in user;
+}
+
+// Type guard function to check if user is COSOTINHNGUYEN
+function isCoSoTinhNguyen(user: AuthUser): user is COSOTINHNGUYEN {
+  return 'IDCoSoTinhNguyen' in user;
+}
+
+// Get display name based on user type
+function getDisplayName(user: AuthUser | null): string {
+  if (!user) return 'Tài khoản';
+  return isCoSoTinhNguyen(user) ? user.TenCoSoTinhNguyen : isNguoiDung(user) ? user.HoTen : 'Tài khoản';
+}
+
 interface NavItem {
   label: string;
   href: string;
-  roles?: UserRole[];
+  roles?: string[];
 }
 
 interface MenuItem {
@@ -29,7 +46,7 @@ interface MenuItem {
 export function Header() {
   const { user, isAuthenticated, logout } = useAuthStore();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-
+  
   // Đóng mobile menu khi resize
   useEffect(() => {
     const handleResize = () => {
@@ -53,41 +70,45 @@ export function Header() {
   const filteredNavItems = navItems.filter(item => {
     if (!item.roles) return true; // Hiển thị cho tất cả người dùng
     if (!isAuthenticated) return false; // Ẩn với khách
-    return item.roles.includes(user?.role as UserRole);
+    return item.roles.includes(user?.MaVaiTro || '');
   });
 
   // Lấy danh sách menu quản lý theo vai trò
   const getManagementMenuItems = (): MenuItem[] => {
     if (!isAuthenticated || !user) return [];
 
-    switch (user.role) {
-      case "blood_bank_director":
+    switch (user.MaVaiTro) {
+      case "ROLE_DIRECTOR":
         return [
           { label: "Quản lý thông báo", href: "/blood-bank/notifications" },
           { label: "Quản lý sự kiện", href: "/blood-bank/events" },
           { label: "Quản lý yêu cầu", href: "/blood-bank/requests" },
           { label: "Báo cáo & thống kê", href: "/blood-bank/reports" },
         ];
-      case "volunteer_center_manager":
+      case "ROLE_VOLUNTEER":
         return [
           { label: "Quản lý tình nguyện viên", href: "/volunteer-center/volunteers" },
           { label: "Quản lý sự kiện", href: "/volunteer-center/events" },
         ];
-      case "medical_staff":
+      case "ROLE_MEDICAL":
         return [
-          { label: "Quản lý hiến máu", href: "/medical-staff/donations" },
-          { label: "Quản lý sự kiện", href: "/medical-staff/events" },
+          { label: "Quản lý hiến máu", href: "/medical-staff" },
+          { label: "Quản lý phản hồi", href: "/medical-staff/feedback" },
         ];
-      case "doctor":
+      case "ROLE_DOCTOR":
         return [
-          { label: "Đánh giá máu", href: "/doctor/evaluations" },
-          { label: "Lịch sử hiến máu", href: "/doctor/donation-history" },
+          { label: "Quản lý hiến máu", href: "/doctor" },
         ];
-      case "admin":
+      case "ROLE_ADMIN":
         return [
           { label: "Quản lý người dùng", href: "/admin/users" },
           { label: "Quản lý bệnh viện", href: "/admin/hospitals" },
           { label: "Cài đặt hệ thống", href: "/admin/settings" },
+        ];
+      case "ROLE_DONOR":
+        return [
+          { label: "Khu vực người hiến máu", href: "/donor/dashboard" },
+          { label: "Đăng ký hiến máu", href: "/donor/donations/register" },
         ];
       default:
         return [];
@@ -124,18 +145,18 @@ export function Header() {
   const getUserHomePage = () => {
     if (!user) return "/";
     
-    switch (user.role) {
-      case "donor":
-        return "/events";
-      case "medical_staff":
+    switch (user.MaVaiTro) {
+      case "ROLE_DONOR":
+        return "/donor/dashboard";
+      case "ROLE_MEDICAL":
         return "/medical-staff";
-      case "doctor":
+      case "ROLE_DOCTOR":
         return "/doctor";
-      case "volunteer_center_manager":
+      case "ROLE_VOLUNTEER":
         return "/volunteer-center";
-      case "blood_bank_director":
+      case "ROLE_DIRECTOR":
         return "/blood-bank/notifications";
-      case "admin":
+      case "ROLE_ADMIN":
         return "/admin";
       default:
         return "/";
@@ -174,7 +195,7 @@ export function Header() {
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="outline" className="flex items-center gap-1 min-w-[120px] justify-between px-3">
-                  <span className="truncate">{user?.name}</span> <ChevronDown className="h-4 w-4 flex-shrink-0" />
+                  <span className="truncate">{getDisplayName(user)}</span> <ChevronDown className="h-4 w-4 flex-shrink-0" />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-56">
@@ -183,15 +204,20 @@ export function Header() {
                 <DropdownMenuItem asChild>
                   <Link href={`/profile`}>Thông tin tài khoản</Link>
                 </DropdownMenuItem>
-                {user?.role === "blood_bank_director" && (
+                {user?.MaVaiTro === "ROLE_DIRECTOR" && (
                   <DropdownMenuItem asChild>
                     <Link href="/blood-bank/notifications/create">Tạo thông báo mới</Link>
                   </DropdownMenuItem>
                 )}
-                {user?.role === "donor" && (
-                  <DropdownMenuItem asChild>
-                    <Link href="/donor/donation-history">Lịch sử hiến máu</Link>
-                  </DropdownMenuItem>
+                {user?.MaVaiTro === "ROLE_DONOR" && (
+                  <>
+                    <DropdownMenuItem asChild>
+                      <Link href="/donor/dashboard">Khu vực người hiến máu</Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <Link href="/donor/donations/register">Đăng ký hiến máu</Link>
+                    </DropdownMenuItem>
+                  </>
                 )}
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={() => logout()}>
@@ -280,7 +306,7 @@ export function Header() {
               {isAuthenticated ? (
                 <>
                   <div className="text-sm text-muted-foreground">
-                    Xin chào, {user?.name}
+                    Xin chào, {getDisplayName(user)}
                   </div>
                   <Link 
                     href={`/profile`}
@@ -289,7 +315,7 @@ export function Header() {
                   >
                     Thông tin tài khoản
                   </Link>
-                  {user?.role === "blood_bank_director" && (
+                  {user?.MaVaiTro === "ROLE_DIRECTOR" && (
                     <Link 
                       href="/blood-bank/notifications/create"
                       className="block text-sm font-medium transition-colors hover:text-primary"
@@ -298,14 +324,23 @@ export function Header() {
                       Tạo thông báo mới
                     </Link>
                   )}
-                  {user?.role === "donor" && (
-                    <Link 
-                      href="/donor/donation-history"
-                      className="block text-sm font-medium transition-colors hover:text-primary"
-                      onClick={() => setIsMobileMenuOpen(false)}
-                    >
-                      Lịch sử hiến máu
-                    </Link>
+                  {user?.MaVaiTro === "ROLE_DONOR" && (
+                    <>
+                      <Link 
+                        href="/donor/dashboard"
+                        className="block text-sm font-medium transition-colors hover:text-primary"
+                        onClick={() => setIsMobileMenuOpen(false)}
+                      >
+                        Khu vực người hiến máu
+                      </Link>
+                      <Link 
+                        href="/donor/donations/register"
+                        className="block text-sm font-medium transition-colors hover:text-primary"
+                        onClick={() => setIsMobileMenuOpen(false)}
+                      >
+                        Đăng ký hiến máu
+                      </Link>
+                    </>
                   )}
                   <Button variant="ghost" className="w-full" onClick={() => {
                     logout();
@@ -330,4 +365,4 @@ export function Header() {
       )}
     </header>
   );
-} 
+}

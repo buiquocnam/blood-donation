@@ -24,24 +24,24 @@ export function Providers({ children }: ProvidersProps) {
       })
   );
 
-  // Xác định nếu đang ở trang 404 hoặc trang lỗi
-  const isErrorPage = pathname === "/not-found" || pathname === "/error" || !pathname;
+  // TODO: Bỏ comment dòng dưới đây khi đã hoàn thiện hệ thống xác thực
+  // Tạm thời vô hiệu hóa middleware để phát triển
+  const isPublicRoute = true; // Coi tất cả các route là public trong quá trình phát triển
+  
+  // Xác định nếu đang ở trang public hoặc trang lỗi
+  // const isPublicRoute = 
+  //   pathname === "/" || 
+  //   pathname === "/auth/login" || 
+  //   pathname === "/auth/register" || 
+  //   pathname === "/about" || 
+  //   pathname === "/not-found" || 
+  //   pathname === "/error" || 
+  //   !pathname;
 
   return (
     <QueryClientProvider client={queryClient}>
-      {isErrorPage ? (
-        // Không bao bọc các trang lỗi trong AuthMiddleware
-        <>
-          <Toaster position="top-right" />
-          {children}
-        </>
-      ) : (
-        // Bao bọc các trang thông thường trong AuthMiddleware
-        <AuthMiddleware>
-          <Toaster position="top-right" />
-          {children}
-        </AuthMiddleware>
-      )}
+      <Toaster position="top-right" />
+      {isPublicRoute ? children : <AuthMiddleware>{children}</AuthMiddleware>}
     </QueryClientProvider>
   );
 } 

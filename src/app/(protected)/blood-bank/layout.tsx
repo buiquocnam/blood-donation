@@ -10,7 +10,8 @@ import {
   User, 
   Droplets,
   Activity,
-  LogOut
+  LogOut,
+  Building2
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -42,6 +43,7 @@ export default function BloodBankLayout({
             <NavItem href="/blood-bank/notifications" icon={<Bell className="mr-2 h-4 w-4" />} label="Thông báo" />
             <NavItem href="/blood-bank/events" icon={<Calendar className="mr-2 h-4 w-4" />} label="Sự kiện" />
             <NavItem href="/blood-bank/statistics" icon={<BarChart3 className="mr-2 h-4 w-4" />} label="Thống kê" />
+            <NavItem href="/blood-bank/volunteer-centers" icon={<Building2 className="mr-2 h-4 w-4" />} label="Cơ sở tình nguyện" />
             
             <div className="pt-4 pb-2">
               <p className="text-xs font-semibold text-muted-foreground px-2 mb-2 uppercase tracking-wider">

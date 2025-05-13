@@ -5,8 +5,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { useQuery } from '@tanstack/react-query';
-import { format } from 'date-fns';
-import { vi } from 'date-fns/locale';
+import { formatDate } from '@/utils';
 import { CalendarIcon, MapPinIcon, UsersIcon, Search } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -143,10 +142,10 @@ export default function EventsPage() {
                         <CalendarIcon className="h-4 w-4 mr-2 text-gray-500" />
                         <span>
                           {event.ThongBao?.TgBatDauSK 
-                            ? format(new Date(event.ThongBao.TgBatDauSK), 'dd/MM/yyyy HH:mm', { locale: vi })
+                            ? formatDate(event.ThongBao.TgBatDauSK)
                             : 'Không xác định'} - 
                           {event.ThongBao?.TgKetThucSK
-                            ? format(new Date(event.ThongBao.TgKetThucSK), 'dd/MM/yyyy HH:mm', { locale: vi })
+                            ? formatDate(event.ThongBao.TgKetThucSK)
                             : 'Không xác định'}
                         </span>
                       </div>
@@ -221,10 +220,10 @@ export default function EventsPage() {
                         <CalendarIcon className="h-4 w-4 mr-2 text-gray-500" />
                         <span>
                           {event.ThongBao?.TgBatDauSK 
-                            ? format(new Date(event.ThongBao.TgBatDauSK), 'dd/MM/yyyy HH:mm', { locale: vi })
+                            ? formatDate(event.ThongBao.TgBatDauSK)
                             : 'Không xác định'} - 
                           {event.ThongBao?.TgKetThucSK
-                            ? format(new Date(event.ThongBao.TgKetThucSK), 'dd/MM/yyyy HH:mm', { locale: vi })
+                            ? formatDate(event.ThongBao.TgKetThucSK)
                             : 'Không xác định'}
                         </span>
                       </div>
