@@ -2,9 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import Image from "next/image";
 import { formatDate, formatDateOnly, formatTimeOnly } from '@/utils';
-import { vi } from "date-fns/locale";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { 
@@ -27,22 +25,16 @@ import { useRouter } from "next/navigation";
 interface EventCardProps {
   event: DANGKITOCHUCHIENMAU_WithRelations;
   variant?: "default" | "compact";
+  role?: "user" | "staff" | "doctor" | "admin";
+  onStaffAction?: (event: DANGKITOCHUCHIENMAU_WithRelations) => void;
 }
 
-export function EventCard({ event, variant = "default" }: EventCardProps) {
+export function EventCard({ event, variant = "default", role = "user", onStaffAction }: EventCardProps) {
   const [isBookmarked, setIsBookmarked] = useState(false);
   const [isRegistering, setIsRegistering] = useState(false);
   const { handleEventRegistration, isAuthenticated, isLoading } = useAuthCheck();
   const router = useRouter();
 
-  // Format time
-  const formatTime = (dateString: string) => {
-    try {
-      return formatTimeOnly(dateString);
-    } catch (error) {
-      return "";
-    }
-  };
 
   // Get status badge color and variant
   const getStatusBadge = (status: string) => {
@@ -64,10 +56,8 @@ export function EventCard({ event, variant = "default" }: EventCardProps) {
   const endDate = event.NgaySua;
   const location = event.CoSoTinhNguyen?.TenCoSoTinhNguyen || event.IDCoSoTinhNguyen || "Không xác định";
   const description = event.ThongBao?.NoiDung || "Sự kiện hiến máu nhân đạo";
-  const registrationTime = formatTime(event.NgayDangKi);
+  const registrationTime = formatTimeOnly(event.NgayDangKi);
 
-  // Placeholder image for events
-  const eventImage = `/images/events/${event.IdSuKien}.jpg`;
 
   // Calculate registration percentage
   const registrationPercent = event.SoLuongDK > 0 
@@ -137,6 +127,16 @@ export function EventCard({ event, variant = "default" }: EventCardProps) {
     }
   };
 
+  // Handle staff action click
+  const onStaffActionClick = () => {
+    if (onStaffAction) {
+      onStaffAction(event);
+    } else {
+      // Default behavior if no callback is provided
+      router.push(`/medical-staff/registrations/${event.IdSuKien}`);
+    }
+  };
+
   // Compact variant
   if (variant === "compact") {
     return (
@@ -203,27 +203,31 @@ export function EventCard({ event, variant = "default" }: EventCardProps) {
                 </Badge>
               </div>
               <div className="flex gap-2">
-                <Button 
-                  variant="ghost" 
-                  size="icon" 
-                  className="h-8 w-8 rounded-full hover:bg-primary/10"
-                  onClick={handleBookmark}
-                  title={isBookmarked ? "Bỏ lưu" : "Lưu sự kiện này"}
-                >
-                  <Heart 
-                    className={`h-4 w-4 ${isBookmarked ? "fill-red-500 text-red-500" : ""}`} 
-                  />
-                </Button>
-                
-                <Button 
-                  variant="ghost" 
-                  size="icon" 
-                  className="h-8 w-8 rounded-full hover:bg-primary/10"
-                  onClick={handleShare}
-                  title="Chia sẻ sự kiện"
-                >
-                  <Share2 className="h-4 w-4" />
-                </Button>
+                {role === "user" && (
+                  <>
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      className="h-8 w-8 rounded-full hover:bg-primary/10"
+                      onClick={handleBookmark}
+                      title={isBookmarked ? "Bỏ lưu" : "Lưu sự kiện này"}
+                    >
+                      <Heart 
+                        className={`h-4 w-4 ${isBookmarked ? "fill-red-500 text-red-500" : ""}`} 
+                      />
+                    </Button>
+                    
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      className="h-8 w-8 rounded-full hover:bg-primary/10"
+                      onClick={handleShare}
+                      title="Chia sẻ sự kiện"
+                    >
+                      <Share2 className="h-4 w-4" />
+                    </Button>
+                  </>
+                )}
               </div>
             </div>
 
@@ -290,38 +294,41 @@ export function EventCard({ event, variant = "default" }: EventCardProps) {
           </CardContent>
         </div>
         <CardFooter className="px-6 py-4 flex justify-between">
-          <Button variant="outline" asChild className="mr-3 group">
-            <Link href={`/events/${event.IdSuKien}`} className="flex items-center">
-              Xem chi tiết
-              <ChevronRight className="ml-1 h-4 w-4 transition-transform group-hover:translate-x-0.5" />
-            </Link>
-          </Button>
-          
-          <Button 
-            onClick={onRegisterClick}
-            disabled={!isEventAvailable || isRegistering || isLoading}
-            className="relative overflow-hidden group"
-            title={!isEventAvailable ? "Sự kiện này không còn nhận đăng ký" : ""}
-          >
-            {isRegistering ? (
-              <span className="flex items-center">
-                <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
-                Đang xử lý...
-              </span>
-            ) : (
-              <>
-                {!isAuthenticated && <span className="absolute -top-1 -right-1 flex h-3 w-3">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-3 w-3 bg-primary"></span>
-                </span>}
-                <span className="relative z-10">Đăng ký tham gia</span>
-                <span className="absolute inset-0 h-full w-full bg-white/20 transform scale-x-0 origin-left transition-transform group-hover:scale-x-100"></span>
-              </>
-            )}
-          </Button>
+          {role === "user" ? (
+            <Button 
+              onClick={onRegisterClick}
+              disabled={!isEventAvailable || isRegistering || isLoading}
+              className="relative overflow-hidden group"
+              title={!isEventAvailable ? "Sự kiện này không còn nhận đăng ký" : ""}
+            >
+              {isRegistering ? (
+                <span className="flex items-center">
+                  <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  Đang xử lý...
+                </span>
+              ) : (
+                <>
+                  {!isAuthenticated && <span className="absolute -top-1 -right-1 flex h-3 w-3">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-3 w-3 bg-primary"></span>
+                  </span>}
+                  <span className="relative z-10">Đăng ký tham gia</span>
+                  <span className="absolute inset-0 h-full w-full bg-white/20 transform scale-x-0 origin-left transition-transform group-hover:scale-x-100"></span>
+                </>
+              )}
+            </Button>
+          ) : (
+            <Button 
+              onClick={onStaffActionClick}
+              className="relative overflow-hidden group"
+            >
+              <span className="relative z-10">Xem đăng ký</span>
+              <span className="absolute inset-0 h-full w-full bg-white/20 transform scale-x-0 origin-left transition-transform group-hover:scale-x-100"></span>
+            </Button>
+          )}
         </CardFooter>
       </Card>
     </motion.div>

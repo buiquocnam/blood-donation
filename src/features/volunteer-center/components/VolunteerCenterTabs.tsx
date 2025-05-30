@@ -6,12 +6,18 @@ import { AnnouncementsList } from './AnnouncementsList';
 import { EventRegistrationsList } from './EventRegistrationsList';
 import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
+import { THONGBAODKTOCHUC, DANGKITOCHUCHIENMAU, COSOTINHNGUYEN } from '@/types';
 
 interface VolunteerCenterTabsProps {
   centerId: string;
+  initialData: {
+    announcements: THONGBAODKTOCHUC[];
+    eventRegistrations: DANGKITOCHUCHIENMAU[];
+    centerDetails: COSOTINHNGUYEN | undefined;
+  };
 }
 
-export function VolunteerCenterTabs({ centerId }: VolunteerCenterTabsProps) {
+export function VolunteerCenterTabs({ centerId, initialData }: VolunteerCenterTabsProps) {
   const searchParams = useSearchParams();
   const router = useRouter();
   const pathname = usePathname();
@@ -45,11 +51,15 @@ export function VolunteerCenterTabs({ centerId }: VolunteerCenterTabsProps) {
       </TabsList>
       
       <TabsContent value={TabTypes.ANNOUNCEMENTS} className="mt-6">
-        <AnnouncementsList centerId={centerId} />
+        <AnnouncementsList centerId={centerId} initialAnnouncements={initialData.announcements} />
       </TabsContent>
       
       <TabsContent value={TabTypes.EVENT_REGISTRATIONS} className="mt-6">
-        <EventRegistrationsList centerId={centerId} />
+        <EventRegistrationsList 
+          centerId={centerId} 
+          initialRegistrations={initialData.eventRegistrations}
+          initialAnnouncements={initialData.announcements}
+        />
       </TabsContent>
     </Tabs>
   );

@@ -1,108 +1,51 @@
 /**
  * Dịch vụ API cho tính năng Nhân viên y tế
  */
-import { BloodDonation, UpdateDonationStatusData, PhanHoiWithUserInfo, TrangThaiPhanHoi, UpdateFeedbackStatusData } from '../types';
-import { mockDangKiToChucHienMau, mockDangKiHienMau, mockNguoiDung } from '@/mock';
+import { UpdateDonationStatusData, PhanHoiWithUserInfo, TrangThaiPhanHoi, UpdateFeedbackStatusData, DonationRegistrationResponse } from '../types';
+import { mockDangKiHienMau, mockNguoiDung } from '@/mock';
 import { mockPhanHoi } from '@/mock/events';
-import { DANGKITOCHUCHIENMAU, DANGKIHIENMAU, NGUOIDUNG, TrangThaiHienMau } from '@/types';
+import { NGUOIDUNG } from '@/types';
 import api from '@/lib/api/client';
+import { MEDICAL_STAFF_ENDPOINTS } from '@/lib/api/endpoints';
 
 /**
  * Service xử lý các chức năng dành cho nhân viên y tế
  */
 export class MedicalStaffService {
   private static ENDPOINTS = {
-    EVENTS: '/medical-staff/events',
-    REGISTRATIONS: '/medical-staff/registrations',
-    DONATIONS: '/medical-staff/donations',
-    APPROVE: '/medical-staff/approve',
-    DONATION_STATUS: '/medical-staff/donation-status',
-    USERS: '/medical-staff/users',
-    FEEDBACKS: '/medical-staff/feedbacks'
+    REGISTRATIONS: MEDICAL_STAFF_ENDPOINTS.DONATION_REQUESTS,
+    
+    USERS: '/users/public',
+    UPDATE_DONATION_STATUS: '/donations/:id/status',
+    FEEDBACKS: MEDICAL_STAFF_ENDPOINTS.FEEDBACKS
   };
-
-  /**
-   * Lấy danh sách sự kiện hiến máu
-   * @returns Danh sách sự kiện hiến máu
-   */
-  public static async getBloodDonationEvents(): Promise<DANGKITOCHUCHIENMAU[]> {
-    try {
-      console.log(`[MedicalStaffService] Fetching events from: ${this.ENDPOINTS.EVENTS}`);
-      const response = await api.get(this.ENDPOINTS.EVENTS);
-      if (!response.data) {
-        throw new Error('Không thể lấy danh sách sự kiện hiến máu');
-      }
-      return response.data;
-    } catch (error) {
-      console.error('[MedicalStaffService] getBloodDonationEvents error:', error);
-      console.log('[MedicalStaffService] Using mock data');
-      
-      // Trả về trực tiếp dữ liệu mock
-      return mockDangKiToChucHienMau;
-    }
-  }
 
   /**
    * Lấy danh sách đăng ký hiến máu cho một sự kiện
    * @param eventId ID của sự kiện
    * @returns Danh sách đăng ký hiến máu
    */
-  public static async getRegistrationsByEvent(eventId: string): Promise<DANGKIHIENMAU[]> {
+  public static async getRegistrationsByEvent(eventId: string): Promise<DonationRegistrationResponse[]> {
     try {
       console.log(`[MedicalStaffService] Fetching registrations for event: ${eventId}`);
-      const response = await api.get(`${this.ENDPOINTS.EVENTS}/${eventId}/registrations`);
-      if (!response.data) {
+      console.log(`[MedicalStaffService] Using endpoint: ${MEDICAL_STAFF_ENDPOINTS.EVENT_REGISTRATIONS(eventId)}`);
+      
+      // Sử dụng api đã được cấu hình sẵn trong client.ts
+      const response = await api.get(MEDICAL_STAFF_ENDPOINTS.EVENT_REGISTRATIONS(eventId));
+      console.log(response.data.result.data);
+      if (!response.data.result) {
+        console.warn('[MedicalStaffService] API response missing result field');
         throw new Error('Không thể lấy danh sách đăng ký hiến máu');
       }
-      return response.data;
+      
+      console.log(`[MedicalStaffService] Successfully fetched ${response.data.result.length} registrations`);
+      return response.data.result.data;
     } catch (error) {
       console.error('[MedicalStaffService] getRegistrationsByEvent error:', error);
-      
-      // Fallback to mock data
-      console.log('[MedicalStaffService] Using mock data');
-      return mockDangKiHienMau.filter(dk => dk.IdSuKienHienMau === eventId);
+      return [];
     }
   }
 
-  /**
-   * Lấy chi tiết đăng ký hiến máu theo ID
-   * @param registrationId ID của đơn đăng ký hiến máu
-   * @returns Chi tiết đăng ký hiến máu
-   */
-  public static async getRegistrationById(registrationId: string): Promise<DANGKIHIENMAU> {
-    console.log(`[MedicalStaffService] Fetching registration with ID: "${registrationId}"`);
-    
-    try {
-      const response = await api.get(`${this.ENDPOINTS.REGISTRATIONS}/${registrationId}`);
-      if (!response.data) {
-        console.error('[MedicalStaffService] API request failed: No data returned');
-        throw new Error('Không thể lấy chi tiết đăng ký hiến máu');
-      }
-      
-      console.log('[MedicalStaffService] API returned data:', response.data);
-      return response.data;
-    } catch (error) {
-      console.error('[MedicalStaffService] getRegistrationById error:', error);
-      console.log('[MedicalStaffService] Switching to mock data lookup');
-      
-      // Verify mock data is available
-      console.log('[MedicalStaffService] Available IDs in mock data:', 
-        mockDangKiHienMau.map(reg => reg.MaDKiHienMau));
-      
-      // Find matching registration by ID
-      const mockRegistration = mockDangKiHienMau.find(
-        reg => reg.MaDKiHienMau === registrationId
-      );
-      
-      if (!mockRegistration) {
-        console.error(`[MedicalStaffService] No registration found with ID: "${registrationId}" in mock data`);
-        throw new Error(`Không tìm thấy đăng ký hiến máu với ID: ${registrationId}`);
-      }
-      
-      console.log('[MedicalStaffService] Found matching mock registration:', mockRegistration);
-      return { ...mockRegistration };  // Return a copy to avoid mutations
-    }
-  }
 
   /**
    * Lấy thông tin người hiến máu theo ID
@@ -115,16 +58,11 @@ export class MedicalStaffService {
       if (!response.data) {
         throw new Error('Không thể lấy thông tin người hiến máu');
       }
-      return response.data;
+      console.log("getDonorById",response.data.result);
+      return response.data.result;
     } catch (error) {
       console.error('[MedicalStaffService] getDonorById error:', error);
-      
-      // Fallback to mock data
-      const donorData = mockNguoiDung.find(user => user.MaNguoiDung === donorId);
-      if (!donorData) {
-        throw new Error(`Không tìm thấy thông tin người hiến máu với ID: ${donorId}`);
-      }
-      return donorData;
+      throw error;
     }
   }
 
@@ -133,40 +71,23 @@ export class MedicalStaffService {
    * @param eventId ID của sự kiện
    * @returns Danh sách người đã hiến máu
    */
-  public static async getDonationsByEvent(eventId: string): Promise<BloodDonation[]> {
+  public static async getDonationsByEvent(eventId: string): Promise<DonationRegistrationResponse[]> {
     try {
-      const response = await api.get(`${this.ENDPOINTS.EVENTS}/${eventId}/donations`);
+      // Sử dụng api đã được cấu hình sẵn trong client.ts
+      const response = await api.get(MEDICAL_STAFF_ENDPOINTS.EVENT_DONATIONS(eventId));
+      
       if (!response.data) {
+        console.warn('[MedicalStaffService] API response missing data');
         throw new Error('Không thể lấy danh sách người đã hiến máu');
       }
-      return response.data;
+      
+      console.log(`[MedicalStaffService] Successfully fetched donations`);
+      return response.data.result.data;
     } catch (error) {
       console.error('[MedicalStaffService] getDonationsByEvent error:', error);
-      console.log('[MedicalStaffService] Using mock data');
-      
-      // Lọc đăng ký đã hoàn thành (đã hiến máu) theo sự kiện
-      const completedDonations = mockDangKiHienMau.filter(
-        (reg) => 
-          reg.IdSuKienHienMau === eventId && 
-          reg.TrangThaiHienMau === TrangThaiHienMau.DA_HOAN_THANH
-      );
-      
-      return completedDonations.map((donation) => ({
-        MaDKiHienMau: donation.MaDKiHienMau,
-        IdNguoiHienMau: donation.IdNguoiHienMau,
-        HoTen: `Người hiến máu ${donation.MaDKiHienMau}`, // Giả định tên người hiến máu
-        MaNhomMau: "A_POS", // Giả định nhóm máu
-        ChieuCao: donation.ChieuCao || 170,
-        CanNang: donation.CanNang || 65,
-        NhietDo: donation.NhietDo || 36.5,
-        NhipTim: donation.NhipTim || 72,
-        HuyetAp: donation.HuyetAp || "120/80",
-        TrangThaiHienMau: donation.TrangThaiHienMau,
-        NgayHienMau: donation.NgaySua // Giả sử ngày hiến máu là ngày cập nhật
-      }));
+      return [];
     }
   }
-
   /**
    * Duyệt đơn đăng ký hiến máu
    * @param registrationId ID của đơn đăng ký
@@ -187,7 +108,7 @@ export class MedicalStaffService {
     }
     
     try {
-      const response = await api.put(`${this.ENDPOINTS.REGISTRATIONS}/${registrationId}/approve`, {
+      const response = await api.put(`/donations/${registrationId}/status`, {
         status,
         note
       });
@@ -250,7 +171,7 @@ export class MedicalStaffService {
       
       // Sử dụng mock data
       const feedbacksWithUser: PhanHoiWithUserInfo[] = mockPhanHoi.map(feedback => {
-        const registration = mockDangKiHienMau.find(reg => reg.MaDKiHienMau === feedback.MaDKiKienMau);
+        const registration = mockDangKiHienMau.find(reg => reg.MaDKiHienMau === feedback.MaDKiHienMau);
         const user = registration ? mockNguoiDung.find(user => user.MaNguoiDung === registration.IdNguoiHienMau) : null;
         
         return {
@@ -287,7 +208,7 @@ export class MedicalStaffService {
         throw new Error(`Không tìm thấy phản hồi với ID: ${feedbackId}`);
       }
       
-      const registration = mockDangKiHienMau.find(reg => reg.MaDKiHienMau === feedback.MaDKiKienMau);
+      const registration = mockDangKiHienMau.find(reg => reg.MaDKiHienMau === feedback.MaDKiHienMau);
       const user = registration ? mockNguoiDung.find(user => user.MaNguoiDung === registration.IdNguoiHienMau) : null;
       
       return {
@@ -327,9 +248,7 @@ export class MedicalStaffService {
 }
 
 // Backwards compatibility exports
-export const getBloodDonationEvents = MedicalStaffService.getBloodDonationEvents.bind(MedicalStaffService);
 export const getRegistrationsByEvent = MedicalStaffService.getRegistrationsByEvent.bind(MedicalStaffService);
-export const getRegistrationById = MedicalStaffService.getRegistrationById.bind(MedicalStaffService);
 export const getDonorById = MedicalStaffService.getDonorById.bind(MedicalStaffService);
 export const getDonationsByEvent = MedicalStaffService.getDonationsByEvent.bind(MedicalStaffService);
 export const approveRegistration = MedicalStaffService.approveRegistration.bind(MedicalStaffService);

@@ -3,22 +3,63 @@
 import { Input } from '@/components/ui/input';
 import { AnnouncementCard } from './AnnouncementCard';
 import { VolunteerFilterOptions } from '../types';
-import { useFilteredAnnouncements } from '../hooks';
-import { useState } from 'react';
+import { useRegisterForEvent } from '../hooks';
+import { useState, useEffect } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { RegisterEventForm } from './RegisterEventForm';
-import { useRegisterForEvent } from '../hooks';
+import { THONGBAODKTOCHUC } from '@/types';
+import { useQueryClient } from '@tanstack/react-query';
 
 interface AnnouncementsListProps {
   centerId: string;
+  initialAnnouncements: THONGBAODKTOCHUC[];
 }
 
-export function AnnouncementsList({ centerId }: AnnouncementsListProps) {
-  const { announcements, isLoading, filters, setFilters } = useFilteredAnnouncements();
+export function AnnouncementsList({ centerId, initialAnnouncements }: AnnouncementsListProps) {
+  const [announcements, setAnnouncements] = useState<THONGBAODKTOCHUC[]>(initialAnnouncements);
+  const [filters, setFilters] = useState<VolunteerFilterOptions>({
+    searchTerm: '',
+    dateRange: {
+      from: null,
+      to: null,
+    },
+  });
+  const [isLoading, setIsLoading] = useState(false);
   const [selectedAnnouncementId, setSelectedAnnouncementId] = useState<string | null>(null);
   const { mutate: registerForEvent, isPending } = useRegisterForEvent();
+  const queryClient = useQueryClient();
   
+  // Apply filters to announcements
+  useEffect(() => {
+    // Only apply client-side filtering without network requests
+    const filteredAnnouncements = initialAnnouncements.filter((announcement) => {
+      // Filter by search term
+      if (filters.searchTerm && !announcement.TieuDe.toLowerCase().includes(filters.searchTerm.toLowerCase())) {
+        return false;
+      }
+
+      // Filter by date range
+      if (filters.dateRange?.from) {
+        const announcementDate = new Date(announcement.NgayDang);
+        if (announcementDate < filters.dateRange.from) {
+          return false;
+        }
+      }
+
+      if (filters.dateRange?.to) {
+        const announcementDate = new Date(announcement.NgayDang);
+        if (announcementDate > filters.dateRange.to) {
+          return false;
+        }
+      }
+
+      return true;
+    });
+
+    setAnnouncements(filteredAnnouncements);
+  }, [filters, initialAnnouncements]);
+
   // Handler for search input
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFilters({ ...filters, searchTerm: e.target.value });
@@ -43,6 +84,9 @@ export function AnnouncementsList({ centerId }: AnnouncementsListProps) {
         onSuccess: () => {
           // Close the dialog on success
           setSelectedAnnouncementId(null);
+          // Invalidate queries to refresh data
+          queryClient.invalidateQueries({ queryKey: ['eventRegistrations', centerId] });
+          queryClient.invalidateQueries({ queryKey: ['announcements'] });
         }
       });
     }

@@ -1,5 +1,21 @@
-import { mockDangKiToChucHienMau, mockCoSoTinhNguyen, mockThongBaoDKToChuc } from '@/mock';
-import { DANGKITOCHUCHIENMAU_WithRelations, DANGKITOCHUCHIENMAU, TrangThaiSuKien, TrangThaiDangKy } from '@/types';
+import { api } from '@/lib/api';
+import { endpoints } from '@/lib/api';
+import { TrangThaiSuKien, TrangThaiDangKy, DANGKITOCHUCHIENMAU_WithRelations } from '@/types';
+import { EventsResponse } from '@/features/public/types';
+/**
+ * Kiểu dữ liệu cho response API có phân trang
+ */
+export interface PaginatedResponse<T> {
+  data: T[];
+  pagination: {
+    total: number;
+    totalPages: number;
+    currentPage: number;
+    perPage: number;
+    hasNext: boolean;
+    hasPrevious: boolean;
+  };
+}
 
 /**
  * Service for handling public events
@@ -8,100 +24,70 @@ export const eventsService = {
   /**
    * Get all public events
    * Chỉ trả về các sự kiện đã được duyệt (TinhTrangDK = "approved")
+   * @param page Số trang
+   * @param limit Số lượng mỗi trang
    */
-  async getPublicEvents(): Promise<DANGKITOCHUCHIENMAU_WithRelations[]> {
-    const publicEvents = mockDangKiToChucHienMau
-      .filter(event => event.TinhTrangDK === TrangThaiDangKy.DA_DUYET && event.TrangThaiSuKien == TrangThaiSuKien.SAP_DIEN_RA || event.TrangThaiSuKien == TrangThaiSuKien.DANG_DIEN_RA)
-      .map(event => enrichEventWithRelations(event));
-    return Promise.resolve(publicEvents);
+  async getPublicEvents(page: number = 1, limit: number = 10): Promise<EventsResponse> {
+    const response = await api.get(endpoints.EVENT.LIST, {
+      params: { page, limit }
+    });
+    return response.data.result;
   },
 
   /**
    * Get public events by status
    * @param status Trạng thái sự kiện (upcoming, ongoing, completed)
+   * @param page Số trang
+   * @param limit Số lượng mỗi trang
    */
-  async getEventsByStatus(status: TrangThaiSuKien): Promise<DANGKITOCHUCHIENMAU_WithRelations[]> {
-    const filteredEvents = mockDangKiToChucHienMau
-      .filter(
-        event => event.TinhTrangDK === TrangThaiDangKy.DA_DUYET && event.TrangThaiSuKien === status
-      )
-      .map(event => enrichEventWithRelations(event));
-    return Promise.resolve(filteredEvents);
+  async getEventsByStatus(
+    status: TrangThaiSuKien, 
+    page: number = 1, 
+    limit: number = 10
+  ): Promise<EventsResponse> {
+    const response = await api.get(endpoints.EVENT.LIST, {
+      params: {
+        status,
+        is_approved: true,
+        page,
+        limit
+      }
+    });
+    return response.data;
   },
 
   /**
    * Get a public event by ID
    */
-  async getEventById(id: string): Promise<DANGKITOCHUCHIENMAU_WithRelations | undefined> {
-    const event = mockDangKiToChucHienMau.find(
-      event => event.IdSuKien === id && event.TinhTrangDK === TrangThaiDangKy.DA_DUYET
-    );
-    
-    if (!event) return Promise.resolve(undefined);
-    
-    return Promise.resolve(enrichEventWithRelations(event));
+  async getEventById(id: string): Promise<EventsResponse | undefined> {
+    try {
+      const response = await api.get(endpoints.EVENT.DETAIL(id));
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching event:', error);
+      return undefined;
+    }
   },
 
   /**
    * Search public events by text
    * @param query Từ khóa tìm kiếm
+   * @param page Số trang
+   * @param limit Số lượng mỗi trang
    */
-  async searchEvents(query: string): Promise<DANGKITOCHUCHIENMAU_WithRelations[]> {
-    const normalizedQuery = query.toLowerCase().trim();
-    
-    // Enrich events with data from related tables
-    const eventsWithRelations = mockDangKiToChucHienMau
-      .filter(event => event.TinhTrangDK === TrangThaiDangKy.DA_DUYET)
-      .map(event => enrichEventWithRelations(event));
-    
-    // Now search in the enriched data
-    const filteredEvents = eventsWithRelations.filter(event => 
-      // Tìm trong thông tin cơ sở
-      (event.CoSoTinhNguyen?.TenCoSoTinhNguyen?.toLowerCase().includes(normalizedQuery)) ||
-      // Tìm trong nội dung thông báo
-      (event.ThongBao?.TieuDe?.toLowerCase().includes(normalizedQuery)) ||
-      (event.ThongBao?.NoiDung?.toLowerCase().includes(normalizedQuery))
-    );
-    
-    return Promise.resolve(filteredEvents);
-  },
-
-  /**
-   * Lấy thông tin tổng quát về các sự kiện hiến máu
-   */
-  async getEventsSummary() {
-    const publicEvents = mockDangKiToChucHienMau
-      .filter(event => event.TinhTrangDK === TrangThaiDangKy.DA_DUYET)
-      .map(event => enrichEventWithRelations(event));
-    
-    return {
-      total: publicEvents.length,
-      upcoming: publicEvents.filter(e => e.TrangThaiSuKien === TrangThaiSuKien.SAP_DIEN_RA).length,
-      ongoing: publicEvents.filter(e => e.TrangThaiSuKien === TrangThaiSuKien.DANG_DIEN_RA).length,
-      completed: publicEvents.filter(e => e.TrangThaiSuKien === TrangThaiSuKien.DA_HOAN_THANH).length,
-      recentEvents: publicEvents.slice(0, 3) // 3 sự kiện gần nhất
-    };
+  async searchEvents(
+    query: string, 
+    page: number = 1, 
+    limit: number = 10
+  ): Promise<EventsResponse> {
+    const response = await api.get(endpoints.EVENT.LIST, {
+      params: {
+        search: query,
+        is_approved: true,
+        page,
+        limit
+      }
+    });
+    return response.data;
   }
-};
-
-/**
- * Thêm dữ liệu quan hệ cho sự kiện
- * @param event Sự kiện cần thêm dữ liệu quan hệ
- */
-function enrichEventWithRelations(event: DANGKITOCHUCHIENMAU): DANGKITOCHUCHIENMAU_WithRelations {
-  // Thêm thông tin cơ sở tình nguyện
-  const coSoTinhNguyen = mockCoSoTinhNguyen.find(
-    cs => cs.IDCoSoTinhNguyen === event.IDCoSoTinhNguyen
-  );
-  
-  // Thêm thông tin thông báo
-  const thongBao = mockThongBaoDKToChuc.find(
-    tb => tb.IdThongBaoDK === event.IdThongBaoDK
-  );
-  
-  return {
-    ...event,
-    CoSoTinhNguyen: coSoTinhNguyen,
-    ThongBao: thongBao
-  };
-} 
+}; 

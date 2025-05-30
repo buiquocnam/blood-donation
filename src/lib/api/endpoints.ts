@@ -2,7 +2,7 @@
 export const AUTH_ENDPOINTS = {
   LOGIN: '/auth/login',
   REGISTER: '/auth/register',
-  REGISTER_VOLUNTEER_CENTER: '/auth/register-volunteer-center',
+  REGISTER_VOLUNTEER_CENTER: '/auth/register/center',
   LOGOUT: '/auth/logout',
   REFRESH_TOKEN: '/auth/refresh-token',
   ME: '/auth/me',
@@ -12,6 +12,14 @@ export const AUTH_ENDPOINTS = {
 export const USER_ENDPOINTS = {
   PROFILE: '/users/profile',
   UPDATE_PROFILE: '/users/profile',
+};
+
+// Location endpoints
+export const LOCATION_ENDPOINTS = {
+  CITIES: '/locations/cities',
+  DISTRICTS: (cityId: string) => `/locations/cities/${cityId}/districts`,
+  WARDS: (districtId: string) => `/locations/districts/${districtId}/wards`,
+  FULL_ADDRESS: (wardId: string) => `/locations/wards/${wardId}/full-address`,
 };
 
 // Donor endpoints
@@ -31,6 +39,8 @@ export const EVENT_ENDPOINTS = {
 // Medical Staff endpoints
 export const MEDICAL_STAFF_ENDPOINTS = {
   DONATION_REQUESTS: '/medical-staff/donation-requests',
+  EVENT_REGISTRATIONS: (eventId: string) => `/donations/event/${eventId}`,
+  EVENT_DONATIONS: (eventId: string) => `/donations/event/${eventId}`,
   APPROVE_REQUEST: (id: string) => `/medical-staff/donation-requests/${id}/approve`,
   REJECT_REQUEST: (id: string) => `/medical-staff/donation-requests/${id}/reject`,
   UPDATE_DONATION_STATUS: (id: string) => `/medical-staff/donations/${id}/status`,
@@ -80,6 +90,7 @@ export const ADMIN_ENDPOINTS = {
 export default {
   AUTH: AUTH_ENDPOINTS,
   USER: USER_ENDPOINTS,
+  LOCATION: LOCATION_ENDPOINTS,
   DONOR: DONOR_ENDPOINTS,
   EVENT: EVENT_ENDPOINTS,
   MEDICAL_STAFF: MEDICAL_STAFF_ENDPOINTS,

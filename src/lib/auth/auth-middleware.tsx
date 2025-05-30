@@ -21,20 +21,20 @@ const systemPaths = ["/not-found", "/error"];
 // Trang mặc định cho từng vai trò
 const roleDefaultPages: Record<string, string> = {
   ROLE_DONOR: "/events",
-  ROLE_MEDICAL: "/medical-staff",
+  ROLE_MEDICAL_STAFF: "/medical-staff",
   ROLE_DOCTOR: "/doctor",
-  ROLE_VOLUNTEER: "/volunteer-center",
-  ROLE_DIRECTOR: "/blood-bank/notifications",
+  ROLE_VOLUNTEER_MANAGER: "/volunteer-center",
+  ROLE_BLOOD_DIRECTOR: "/blood-bank/notifications",
   ROLE_ADMIN: "/admin",
 };
 
 // Ánh xạ vai trò người dùng đến các đường dẫn được phép
 const rolePathMapping: Record<string, string[]> = {
   ROLE_DONOR: ["/profile", "/events", "/donor"],
-  ROLE_MEDICAL: ["/profile", "/medical-staff"],
+  ROLE_MEDICAL_STAFF: ["/profile", "/medical-staff"],
   ROLE_DOCTOR: ["/profile", "/doctor"],
-  ROLE_VOLUNTEER: ["/profile", "/volunteer-center"],
-  ROLE_DIRECTOR: [
+  ROLE_VOLUNTEER_MANAGER: ["/profile", "/volunteer-center"],
+  ROLE_BLOOD_DIRECTOR: [
     "/profile", 
     "/blood-bank", 
     "/blood-bank/notifications", 

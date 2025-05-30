@@ -5,11 +5,17 @@ import { SearchFilter } from './search-filter';
 import { UsersTable } from './users-table';
 import { CreateUserForm } from './create-user-form';
 import { useAdminUsers } from '../hooks';
+import { NGUOIDUNG_WithRole, VAITRO } from '@/types';
+
+interface UsersPanelProps {
+  initialUsers: NGUOIDUNG_WithRole[];
+  initialRoles: VAITRO[];
+}
 
 /**
  * Panel quản lý người dùng
  */
-export function UsersPanel() {
+export function UsersPanel({ initialUsers, initialRoles }: UsersPanelProps) {
   const {
     users,
     roles,
@@ -21,7 +27,7 @@ export function UsersPanel() {
     deleteUser,
     createUser,
     isCreatingUser
-  } = useAdminUsers();
+  } = useAdminUsers(initialUsers, initialRoles);
 
   return (
     <Card>

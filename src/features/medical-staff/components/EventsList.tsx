@@ -14,22 +14,28 @@ import {
   DropdownMenuCheckboxItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { useRegistrationEvents } from '../hooks';
+import { EventCard } from '@/features/public/components';
 import { formatDate } from '@/lib/utils';
-import { TrangThaiSuKien } from '@/types';
+import { DANGKITOCHUCHIENMAU_WithRelations, TrangThaiSuKien } from '@/types';
+
+interface EventsListProps {
+  initialEvents: DANGKITOCHUCHIENMAU_WithRelations[];
+}
 
 /**
  * Component hiển thị danh sách sự kiện hiến máu
+ * Đã tuân thủ kiến trúc FFMA - nhận dữ liệu từ server component
  */
-export function EventsList() {
+export function EventsList({ initialEvents }: EventsListProps) {
   const router = useRouter();
-  const { events, isLoading, error } = useRegistrationEvents();
+  const [events] = useState<DANGKITOCHUCHIENMAU_WithRelations[]>(initialEvents);
   const [search, setSearch] = useState('');
   const [selectedStatuses, setSelectedStatuses] = useState<string[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
 
   // Xử lý chuyển hướng đến trang chi tiết sự kiện
-  const handleViewEvent = (eventId: string) => {
-    router.push(`/medical-staff/registrations/${eventId}`);
+  const handleViewEvent = (event: DANGKITOCHUCHIENMAU_WithRelations) => {
+    router.push(`/medical-staff/registrations/${event.IdSuKien}?event=${encodeURIComponent(JSON.stringify(event))}`);
   };
 
   // Lọc sự kiện theo từ khóa tìm kiếm và trạng thái
@@ -65,32 +71,6 @@ export function EventsList() {
     }
   };
 
-  // Xác định màu badge dựa trên trạng thái sự kiện
-  const getStatusBadge = (status: string) => {
-    switch(status) {
-      case TrangThaiSuKien.SAP_DIEN_RA:
-        return <Badge variant="outline" className="bg-purple-50 text-purple-700 border-purple-200">Sắp diễn ra</Badge>;
-      case TrangThaiSuKien.DANG_DIEN_RA:
-        return <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">Đang diễn ra</Badge>;
-      case TrangThaiSuKien.DA_HOAN_THANH:
-        return <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">Đã hoàn thành</Badge>;
-      case TrangThaiSuKien.DA_HUY:
-        return <Badge variant="outline" className="bg-red-50 text-red-700 border-red-200">Đã hủy</Badge>;
-      default:
-        return <Badge variant="outline">{status}</Badge>;
-    }
-  };
-
-  if (error) {
-    return (
-      <div className="flex flex-col items-center justify-center py-10 text-center text-red-500">
-        <p className="text-lg font-medium">Đã xảy ra lỗi khi tải danh sách sự kiện hiến máu</p>
-        <Button variant="outline" className="mt-4" onClick={() => window.location.reload()}>
-          Thử lại
-        </Button>
-      </div>
-    );
-  }
 
   return (
     <div className="space-y-6">
@@ -138,22 +118,7 @@ export function EventsList() {
       {isLoading ? (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {[...Array(6)].map((_, i) => (
-            <Card key={i}>
-              <CardContent className="p-0">
-                <div className="p-6">
-                  <Skeleton className="h-4 w-24 mb-2" />
-                  <Skeleton className="h-6 w-40 mb-4" />
-                  <div className="space-y-2">
-                    <Skeleton className="h-4 w-full" />
-                    <Skeleton className="h-4 w-full" />
-                    <Skeleton className="h-4 w-2/3" />
-                  </div>
-                </div>
-              </CardContent>
-              <CardFooter className="border-t p-4">
-                <Skeleton className="h-10 w-full" />
-              </CardFooter>
-            </Card>
+            <Skeleton key={i} className="h-[300px] w-full rounded-lg" />
           ))}
         </div>
       ) : filteredEvents.length === 0 ? (
@@ -169,47 +134,13 @@ export function EventsList() {
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {filteredEvents.map((event) => (
-            <Card key={event.IdSuKien} className="overflow-hidden transition-all hover:shadow-md">
-              <CardHeader className="pb-3">
-                <div className="flex justify-between items-start">
-                  <CardTitle className="text-lg">
-                    Sự kiện {event.IdSuKien}
-                  </CardTitle>
-                  {getStatusBadge(event.TrangThaiSuKien)}
-                </div>
-                {event.IDCoSoTinhNguyen && (
-                  <CardDescription>
-                    ID cơ sở: {event.IDCoSoTinhNguyen}
-                  </CardDescription>
-                )}
-              </CardHeader>
-              <CardContent className="pb-4">
-                <div className="space-y-2">
-                  <div className="flex items-center text-sm text-muted-foreground">
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    <span>Ngày đăng ký: {formatDate(event.NgayDangKi)}</span>
-                  </div>
-                  <div className="flex items-center text-sm text-muted-foreground">
-                    <ClockIcon className="mr-2 h-4 w-4" />
-                    <span>Hạn đăng ký: {formatDate(event.HanDK)}</span>
-                  </div>
-                  <div className="flex items-center text-sm text-muted-foreground">
-                    <UsersIcon className="mr-2 h-4 w-4" />
-                    <span>
-                      <span className="font-medium text-foreground">{event.SoLuongDDK || 0}</span>/{event.SoLuongDK} người đã đăng ký
-                    </span>
-                  </div>
-                </div>
-              </CardContent>
-              <CardFooter className="border-t p-4 bg-muted/5">
-                <Button 
-                  className="w-full" 
-                  onClick={() => handleViewEvent(event.IdSuKien)}
-                >
-                  Xem đăng ký
-                </Button>
-              </CardFooter>
-            </Card>
+            <div key={event.IdSuKien} className="cursor-pointer">
+              <EventCard 
+                event={event} 
+                role="staff"
+                onStaffAction={handleViewEvent}
+              />
+            </div>
           ))}
         </div>
       )}

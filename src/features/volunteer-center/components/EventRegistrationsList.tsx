@@ -3,23 +3,75 @@
 import { Input } from '@/components/ui/input';
 import { EventRegistrationCard } from './EventRegistrationCard';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { useFilteredEventRegistrations, useCancelEventRegistration } from '../hooks';
-import { useAnnouncements } from '../hooks';
+import { useCancelEventRegistration } from '../hooks';
 import { Skeleton } from '@/components/ui/skeleton';
 import { DANGKITOCHUCHIENMAU, THONGBAODKTOCHUC } from '@/types';
 import { TrangThaiDangKy, TrangThaiSuKien } from '@/types/common';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
+import { EventRegistrationFilterOptions } from '../types';
 
 interface EventRegistrationsListProps {
   centerId: string;
+  initialRegistrations: DANGKITOCHUCHIENMAU[];
+  initialAnnouncements: THONGBAODKTOCHUC[];
 }
 
-export function EventRegistrationsList({ centerId }: EventRegistrationsListProps) {
-  const { registrations, isLoading, filters, setFilters } = useFilteredEventRegistrations(centerId);
-  const { data: announcements } = useAnnouncements();
-  const { mutate: cancelRegistration, isPending } = useCancelEventRegistration();
+export function EventRegistrationsList({ 
+  centerId, 
+  initialRegistrations, 
+  initialAnnouncements 
+}: EventRegistrationsListProps) {
+  const [registrations, setRegistrations] = useState<DANGKITOCHUCHIENMAU[]>(initialRegistrations);
+  const [filters, setFilters] = useState<EventRegistrationFilterOptions>({
+    searchTerm: '',
+    status: null,
+    eventStatus: null,
+    dateRange: {
+      from: null,
+      to: null,
+    },
+  });
+  const [isLoading, setIsLoading] = useState(false);
   const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
+  const { mutate: cancelRegistration, isPending } = useCancelEventRegistration();
+  const queryClient = useQueryClient();
+
+  // Apply filters to registrations
+  useEffect(() => {
+    // Only apply client-side filtering without network requests
+    const filteredRegistrations = initialRegistrations.filter((registration) => {
+      // Filter by status
+      if (filters.status !== null && registration.TinhTrangDK !== filters.status) {
+        return false;
+      }
+
+      // Filter by event status
+      if (filters.eventStatus !== null && registration.TrangThaiSuKien !== filters.eventStatus) {
+        return false;
+      }
+
+      // Filter by date range
+      if (filters.dateRange?.from) {
+        const registrationDate = new Date(registration.NgayDangKi);
+        if (registrationDate < filters.dateRange.from) {
+          return false;
+        }
+      }
+
+      if (filters.dateRange?.to) {
+        const registrationDate = new Date(registration.NgayDangKi);
+        if (registrationDate > filters.dateRange.to) {
+          return false;
+        }
+      }
+
+      return true;
+    });
+
+    setRegistrations(filteredRegistrations);
+  }, [filters, initialRegistrations]);
 
   // Handler for search input
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -67,6 +119,8 @@ export function EventRegistrationsList({ centerId }: EventRegistrationsListProps
       }, {
         onSuccess: () => {
           setSelectedEventId(null);
+          // Invalidate queries to refresh data
+          queryClient.invalidateQueries({ queryKey: ['eventRegistrations', centerId] });
         }
       });
     }
@@ -74,7 +128,7 @@ export function EventRegistrationsList({ centerId }: EventRegistrationsListProps
 
   // Helper to find the announcement for a registration
   const getAnnouncementForRegistration = (registration: DANGKITOCHUCHIENMAU): THONGBAODKTOCHUC | undefined => {
-    return announcements?.find(a => a.IdThongBaoDK === registration.IdThongBaoDK);
+    return initialAnnouncements.find(a => a.IdThongBaoDK === registration.IdThongBaoDK);
   };
 
   return (

@@ -7,7 +7,7 @@ import { NGUOIDUNG, COSOTINHNGUYEN } from "@/types";
  * @returns Boolean cho biết đây có phải là đối tượng NGUOIDUNG không
  */
 export function isNguoiDung(user: AuthUser | null): user is NGUOIDUNG {
-  return user !== null && 'MaNguoiDung' in user;
+  return user !== null && user.MaVaiTro !== "ROLE_VOLUNTEER_MANAGER";
 }
 
 /**
@@ -16,5 +16,5 @@ export function isNguoiDung(user: AuthUser | null): user is NGUOIDUNG {
  * @returns Boolean cho biết đây có phải là đối tượng COSOTINHNGUYEN không
  */
 export function isCoSoTinhNguyen(user: AuthUser | null): user is COSOTINHNGUYEN {
-  return user !== null && 'IDCoSoTinhNguyen' in user;
+  return user !== null && user.MaVaiTro === "ROLE_VOLUNTEER_MANAGER";
 } 

@@ -1,60 +1,69 @@
 'use client';
 
-import { 
-  Table, 
-  TableBody, 
-  TableCell, 
-  TableHead, 
-  TableHeader, 
-  TableRow 
-} from '@/components/ui/table';
+import { useState } from 'react';
+import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { useDonations } from '@/features/medical-staff/hooks';
-import { DonationStatusBadge } from '@/features/medical-staff/components/common';
-import { UpdateDonationStatusDialog } from '@/features/medical-staff/components/registrations';
-import { ApproveRegistrationDialog } from '@/features/medical-staff/components/registrations';
-import { formatDate } from '@/utils';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { TrangThaiHienMau } from '@/types';
+import { DonationRegistrationResponse } from '@/features/medical-staff/types';
+import { UpdateDonationStatusDialog } from './UpdateDonationStatusDialog'; 
+import { useQueryClient } from '@tanstack/react-query';
 
 interface DonationsListProps {
   eventId: string;
+  initialDonations: DonationRegistrationResponse[];
 }
 
-/**
- * Hiển thị danh sách những người đã hiến máu cho một sự kiện
- */
-export function DonationsList({ eventId }: DonationsListProps) {
-  const {
-    searchTerm,
-    setSearchTerm,
-    filteredDonations,
-    isLoading,
-    error,
-    selectedDonation,
-    setSelectedDonation,
-    updateStatusDialogOpen,
-    setUpdateStatusDialogOpen,
-    handleOpenUpdateDialog
-  } = useDonations(eventId);
+/** 
+ * Danh sách người đã hiến máu cho một sự kiện
+ */       
+export function DonationsList({ eventId, initialDonations }: DonationsListProps) {
+  const [donations, setDonations] = useState<DonationRegistrationResponse[]>(initialDonations);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedDonation, setSelectedDonation] = useState<DonationRegistrationResponse | null>(null);
+  const [showDialog, setShowDialog] = useState(false);
   
-  if (isLoading) {
-    return <div className="py-10 text-center">Đang tải danh sách hiến máu...</div>;
-  }
+  const queryClient = useQueryClient();
   
-  if (error) {
-    return (
-      <div className="py-10 text-center text-red-500">
-        Đã xảy ra lỗi khi tải danh sách hiến máu
-      </div>
-    );
-  }
+  // Lọc danh sách theo từ khóa tìm kiếm
+  const filteredDonations = donations.filter((donation) => 
+    donation.MaDKiHienMau?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    donation.IdNguoiHienMau?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    donation.NGUOIHIENMAU?.HoTen?.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+  
+  // Xử lý khi nhấn vào nút cập nhật trạng thái
+  const handleUpdateClick = (donation: DonationRegistrationResponse) => {
+    setSelectedDonation(donation);
+    setShowDialog(true);
+  };
+  
+  // Cập nhật thành công
+  const handleUpdateSuccess = () => {
+    // Cập nhật lại dữ liệu
+    queryClient.invalidateQueries({ queryKey: ['donations', eventId] });
+  };
+  
+  // Helper để hiển thị trạng thái hiến máu
+  const getDonationStatusBadge = (status: string) => {
+    switch(status) {
+      case TrangThaiHienMau.CHO_HIEN:
+        return <Badge variant="outline" className="bg-gray-50 text-gray-700 border-gray-200">Chờ hiến</Badge>;
+      case TrangThaiHienMau.DA_HIEN:
+        return <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">Đã hiến</Badge>;
+      case TrangThaiHienMau.TU_CHOI:
+        return <Badge variant="outline" className="bg-red-50 text-red-700 border-red-200">Từ chối</Badge>;
+      default:
+        return <Badge variant="outline">{status}</Badge>;
+    }
+  };
   
   return (
     <div className="space-y-4">
-      <div className="flex justify-between items-center">
-        <h3 className="text-lg font-medium">Tổng số: {filteredDonations.length} người hiến máu</h3>
+      <div className="flex items-center justify-between">
         <Input
-          placeholder="Tìm kiếm theo tên, mã số..."
+          placeholder="Tìm kiếm người hiến máu..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
           className="max-w-sm"
@@ -62,74 +71,60 @@ export function DonationsList({ eventId }: DonationsListProps) {
       </div>
       
       {filteredDonations.length === 0 ? (
-        <div className="text-center py-10">
-          Không tìm thấy người hiến máu phù hợp
+        <div className="rounded-md border p-8 text-center">
+          <p className="text-muted-foreground">Chưa có người hiến máu nào cho sự kiện này.</p>
         </div>
       ) : (
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Mã đăng ký</TableHead>
-              <TableHead>Người hiến máu</TableHead>
-              <TableHead>Nhóm máu</TableHead>
-              <TableHead>Chỉ số sinh hiệu</TableHead>
-              <TableHead>Ngày hiến</TableHead>
-              <TableHead>Trạng thái</TableHead>
-              <TableHead className="text-right">Thao tác</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {filteredDonations.map((donation) => (
-              <TableRow key={donation.MaDKiHienMau}>
-                <TableCell className="font-medium">{donation.MaDKiHienMau}</TableCell>
-                <TableCell>{donation.HoTen || donation.IdNguoiHienMau}</TableCell>
-                <TableCell>{donation.MaNhomMau || 'Không xác định'}</TableCell>
-                <TableCell>
-                  <div className="text-xs space-y-1">
-                    {donation.NhietDo && <div>Nhiệt độ: {donation.NhietDo}°C</div>}
-                    {donation.NhipTim && <div>Nhịp tim: {donation.NhipTim} bpm</div>}
-                    {donation.HuyetAp && <div>Huyết áp: {donation.HuyetAp}</div>}
-                  </div>
-                </TableCell>
-                <TableCell>{formatDate(donation.NgayHienMau)}</TableCell>
-                <TableCell>
-                  <DonationStatusBadge status={donation.TrangThaiHienMau} />
-                </TableCell>
-                <TableCell className="text-right">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleOpenUpdateDialog(donation.MaDKiHienMau)}
-                  >
-                    Cập nhật
-                  </Button>
-                </TableCell>
+        <div className="rounded-md border">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>ID Đăng Ký</TableHead>
+                <TableHead>Họ Tên</TableHead>
+                <TableHead>Nhóm Máu</TableHead>
+                <TableHead>Thông Số</TableHead>
+                <TableHead>Trạng Thái</TableHead>
+                <TableHead className="text-right">Thao Tác</TableHead>
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+            </TableHeader>
+            <TableBody>
+              {filteredDonations.map((donation) => (
+                <TableRow key={donation.MaDKiHienMau}>
+                  <TableCell className="font-medium">{donation.MaDKiHienMau}</TableCell>
+                  <TableCell>{donation.NGUOIHIENMAU?.HoTen || 'Không xác định'}</TableCell>
+                  <TableCell>{donation.NGUOIHIENMAU?.MaNhomMau || 'Không xác định'}</TableCell>
+                  <TableCell>
+                    <div className="text-xs space-y-1">
+                      <div>Chiều cao: {donation.ChieuCao} cm</div>
+                      <div>Cân nặng: {donation.CanNang} kg</div>
+                      <div>Nhiệt độ: {donation.NhietDo}°C</div>
+                      <div>Nhịp tim: {donation.NhipTim} bpm</div>
+                      <div>Huyết áp: {donation.HuyetAp}</div>
+                    </div>
+                  </TableCell>
+                  <TableCell>{getDonationStatusBadge(donation.TrangThaiHienMau)}</TableCell>
+                  <TableCell className="text-right">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleUpdateClick(donation)}
+                    >
+                      Cập nhật
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
       )}
       
-      {/* Dialog cập nhật trạng thái hiến máu */}
       {selectedDonation && (
         <UpdateDonationStatusDialog
-          open={updateStatusDialogOpen}
-          onOpenChange={setUpdateStatusDialogOpen}
-          registrationId={selectedDonation}
-          onSuccess={() => {
-            setUpdateStatusDialogOpen(false);
-          }}
-        />
-      )}
-      
-      {/* Dialog xem chi tiết đơn đăng ký (view only) */}
-      {selectedDonation && (
-        <ApproveRegistrationDialog
-          open={false} // Chỉ hiển thị khi cần thiết bằng cách thay đổi state
-          onOpenChange={() => {}} // Thêm handler nếu cần
-          registrationId={selectedDonation}
-          onApprove={() => {}} // Trong chế độ xem, hàm này không được gọi
-          viewOnly={true}
+          open={showDialog}
+          onOpenChange={setShowDialog}
+          donation={selectedDonation}
+          onSuccess={handleUpdateSuccess}
         />
       )}
     </div>

@@ -7,7 +7,8 @@ import {
   DialogHeader, 
   DialogTitle, 
   DialogDescription,
-  DialogFooter
+  DialogFooter,
+  DialogTrigger
 } from '@/components/ui/dialog';
 import { 
   Form, 
@@ -33,12 +34,14 @@ import * as z from 'zod';
 import { useFeedbackDetail } from '@/features/medical-staff/hooks';
 import { TrangThaiPhanHoi, UpdateFeedbackStatusData } from '@/features/medical-staff/types';
 import { toast } from 'sonner';
+import { Loader2 } from "lucide-react";
+import { Label } from "@/components/ui/label";
+import { PHANHOI } from "@/types/events";
+import { formatDate } from "@/utils";
 
-interface UpdateFeedbackStatusDialogProps {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  feedbackId: string;
-  onSuccess?: () => void;
+export interface UpdateFeedbackStatusDialogProps {
+  feedback: PHANHOI;
+  children: React.ReactNode;
 }
 
 // Schema validation cho form
@@ -54,39 +57,37 @@ const formSchema = z.object({
 /**
  * Dialog cập nhật trạng thái xử lý phản hồi
  */
-export function UpdateFeedbackStatusDialog({ 
-  open, 
-  onOpenChange,
-  feedbackId,
-  onSuccess
-}: UpdateFeedbackStatusDialogProps) {
+export function UpdateFeedbackStatusDialog({ feedback, children }: UpdateFeedbackStatusDialogProps) {
+  const [isOpen, setIsOpen] = useState(false);
+  const [status, setStatus] = useState("CHUA_XU_LY");
+  const [note, setNote] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   
   // Lấy thông tin chi tiết phản hồi
   const { 
-    feedback, 
+    feedback: feedbackDetail, 
     isLoading,
     handleUpdateStatus 
-  } = useFeedbackDetail(feedbackId);
+  } = useFeedbackDetail(feedback.MaPhanHoi);
   
   // Khởi tạo form
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      trangThaiXuLy: feedback?.TrangThaiXuLy || TrangThaiPhanHoi.CHUA_XU_LY,
-      ghiChuXuLy: feedback?.GhiChuXuLy || '',
+      trangThaiXuLy: feedbackDetail?.TrangThaiXuLy || TrangThaiPhanHoi.CHUA_XU_LY,
+      ghiChuXuLy: feedbackDetail?.GhiChuXuLy || '',
     },
   });
   
   // Cập nhật giá trị mặc định khi dữ liệu được tải
   React.useEffect(() => {
-    if (feedback) {
+    if (feedbackDetail) {
       form.reset({
-        trangThaiXuLy: feedback.TrangThaiXuLy,
-        ghiChuXuLy: feedback.GhiChuXuLy || '',
+        trangThaiXuLy: feedbackDetail.TrangThaiXuLy,
+        ghiChuXuLy: feedbackDetail.GhiChuXuLy || '',
       });
     }
-  }, [feedback, form]);
+  }, [feedbackDetail, form]);
   
   // Xử lý form submit
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
@@ -102,10 +103,7 @@ export function UpdateFeedbackStatusDialog({
       
       if (result) {
         toast.success('Cập nhật trạng thái thành công');
-        onOpenChange(false);
-        if (onSuccess) {
-          onSuccess();
-        }
+        setIsOpen(false);
       } else {
         toast.error('Cập nhật trạng thái thất bại');
       }
@@ -117,13 +115,41 @@ export function UpdateFeedbackStatusDialog({
     }
   };
   
+  const handleUpdateStatusDialog = async () => {
+    setIsSubmitting(true);
+    
+    try {
+      const updateData: UpdateFeedbackStatusData = {
+        trangThaiXuLy: status as TrangThaiPhanHoi,
+        ghiChuXuLy: note,
+      };
+      
+      const result = await handleUpdateStatus(updateData);
+      
+      if (result) {
+        toast.success('Cập nhật trạng thái thành công');
+        setIsOpen(false);
+      } else {
+        toast.error('Cập nhật trạng thái thất bại');
+      }
+    } catch (error) {
+      console.error('Error updating feedback status:', error);
+      toast.error('Đã xảy ra lỗi khi cập nhật trạng thái');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[600px]">
+    <Dialog open={isOpen} onOpenChange={setIsOpen}>
+      <DialogTrigger asChild>
+        {children}
+      </DialogTrigger>
+      <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Cập nhật trạng thái xử lý phản hồi</DialogTitle>
-          <DialogDescription>
-            Cập nhật thông tin xử lý phản hồi của người hiến máu
+          <DialogTitle className="text-xl text-left">Cập nhật trạng thái phản hồi</DialogTitle>
+          <DialogDescription className="text-left">
+            Cập nhật thông tin xử lý phản hồi
           </DialogDescription>
         </DialogHeader>
         
@@ -131,42 +157,46 @@ export function UpdateFeedbackStatusDialog({
           <div className="flex justify-center items-center h-40">
             <p>Đang tải thông tin phản hồi...</p>
           </div>
-        ) : !feedback ? (
+        ) : !feedbackDetail ? (
           <div className="flex justify-center items-center h-40">
             <p className="text-destructive">Không tìm thấy thông tin phản hồi</p>
           </div>
         ) : (
-          <div className="space-y-4 py-4">
+          <div className="space-y-4 py-2">
             <div className="grid grid-cols-1 gap-4">
               <div className="space-y-2">
-                <h3 className="font-medium">Thông tin phản hồi</h3>
-                <div className="rounded-md bg-muted p-4">
-                  <div className="mb-2">
-                    <span className="font-medium">Mã phản hồi:</span> {feedback.MaPhanHoi}
+                <h3 className="font-medium text-left">Thông tin phản hồi</h3>
+                <div className="rounded-md bg-muted p-3 text-sm overflow-hidden">
+                  <div className="mb-1 flex">
+                    <span className="font-medium w-32 shrink-0 text-left">Mã phản hồi:</span> 
+                    <span className="truncate text-left">{feedback.MaPhanHoi}</span>
                   </div>
-                  <div className="mb-2">
-                    <span className="font-medium">Mã đăng ký hiến máu:</span> {feedback.MaDKiKienMau}
+                  <div className="mb-1 flex">
+                    <span className="font-medium w-32 shrink-0 text-left">Mã đăng ký:</span> 
+                    <span className="truncate text-left">{feedback.MaDKiKienMau}</span>
                   </div>
-                  <div className="mb-2">
-                    <span className="font-medium">Người hiến máu:</span> {feedback.NguoiHienMau?.HoTen || 'Không xác định'}
+                  <div className="mb-1 flex">
+                    <span className="font-medium w-32 shrink-0 text-left">Người hiến máu:</span> 
+                    <span className="truncate text-left">{feedbackDetail.NguoiHienMau?.HoTen || 'Không xác định'}</span>
                   </div>
-                  <div className="mb-2">
-                    <span className="font-medium">Ngày phản hồi:</span> {new Date(feedback.NgayPhanHoi).toLocaleDateString('vi-VN')}
+                  <div className="mb-1 flex">
+                    <span className="font-medium w-32 shrink-0 text-left">Ngày phản hồi:</span> 
+                    <span className="text-left">{formatDate(feedback.NgayPhanHoi)}</span>
                   </div>
                   <div>
-                    <span className="font-medium">Nội dung phản hồi:</span>
-                    <p className="mt-1 whitespace-pre-wrap">{feedback.TinhTrangMoTa}</p>
+                    <span className="font-medium text-left">Nội dung phản hồi:</span>
+                    <p className="mt-1 whitespace-pre-wrap break-words overflow-auto text-sm bg-background p-2 rounded max-h-28 text-left">{feedback.TinhTrangMoTa}</p>
                   </div>
                 </div>
               </div>
               
               <Form {...form}>
-                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-3">
                   <FormField
                     control={form.control}
                     name="trangThaiXuLy"
                     render={({ field }) => (
-                      <FormItem>
+                      <FormItem className="text-left">
                         <FormLabel>Trạng thái xử lý</FormLabel>
                         <Select
                           onValueChange={field.onChange}
@@ -190,10 +220,10 @@ export function UpdateFeedbackStatusDialog({
                             </SelectItem>
                           </SelectContent>
                         </Select>
-                        <FormDescription>
-                          Chọn trạng thái xử lý cho phản hồi này
+                        <FormDescription className="text-xs text-left">
+                          Chọn trạng thái xử lý phản hồi
                         </FormDescription>
-                        <FormMessage />
+                        <FormMessage className="text-left" />
                       </FormItem>
                     )}
                   />
@@ -202,36 +232,37 @@ export function UpdateFeedbackStatusDialog({
                     control={form.control}
                     name="ghiChuXuLy"
                     render={({ field }) => (
-                      <FormItem>
+                      <FormItem className="text-left">
                         <FormLabel>Ghi chú xử lý</FormLabel>
                         <FormControl>
                           <Textarea
                             {...field}
                             disabled={isSubmitting}
                             placeholder="Nhập ghi chú xử lý"
-                            className="resize-none"
-                            rows={5}
+                            className="resize-none text-left"
+                            rows={4}
                           />
                         </FormControl>
-                        <FormDescription>
-                          Nhập thông tin chi tiết về cách xử lý phản hồi này
+                        <FormDescription className="text-xs text-left">
+                          Nhập thông tin chi tiết về cách xử lý phản hồi
                         </FormDescription>
-                        <FormMessage />
+                        <FormMessage className="text-left" />
                       </FormItem>
                     )}
                   />
                   
-                  <DialogFooter>
+                  <DialogFooter className="gap-2 sm:gap-0">
                     <Button
                       type="button"
                       variant="outline"
-                      onClick={() => onOpenChange(false)}
+                      onClick={() => setIsOpen(false)}
                       disabled={isSubmitting}
+                      className="mt-2 sm:mt-0"
                     >
                       Hủy
                     </Button>
                     <Button type="submit" disabled={isSubmitting}>
-                      {isSubmitting ? 'Đang lưu...' : 'Lưu thay đổi'}
+                      {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : 'Lưu thay đổi'}
                     </Button>
                   </DialogFooter>
                 </form>

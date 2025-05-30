@@ -1,81 +1,60 @@
-"use client"
+import { eventsService } from "@/features/public/services/eventsService";
+import { EventsClientContainer } from "./client";
+import { Metadata } from "next";
 
-import { useState } from "react";
-import { usePublicEvents } from "@/features/public/hooks";
-import { EventsList } from "@/features/public/components";
-import { TrangThaiSuKien } from "@/types";
-import { motion } from "framer-motion";
-import { Droplet, Heart, Users, Calendar } from "lucide-react";
+interface EventsPageProps {
+  searchParams: Promise<{ page?: string; limit?: string; search?: string; status?: string }>
+}
 
-export default function EventsPage() {
-  const [searchQuery, setSearchQuery] = useState("");
-  const [statusFilter, setStatusFilter] = useState<TrangThaiSuKien | null>(null);
+export const metadata: Metadata = {
+  title: "Sự kiện hiến máu",
+  description: "Danh sách các sự kiện hiến máu. Hãy tham gia và góp phần cứu sống những người cần máu."
+};
 
-  const { 
-    filteredEvents, 
-    isEventsLoading,
-    setSearchQuery: setApiSearchQuery,
-    setStatusFilter: setApiStatusFilter
-  } = usePublicEvents();
-
-  // Xử lý tìm kiếm
-  const handleSearch = (query: string) => {
-    setSearchQuery(query);
-    setApiSearchQuery(query);
-  };
-
-  // Xử lý lọc theo trạng thái
-  const handleStatusFilter = (status: TrangThaiSuKien | null) => {
-    setStatusFilter(status);
-    setApiStatusFilter(status);
-  };
-
-  // Animation variants
-  const container = {
-    hidden: { opacity: 0 },
-    show: {
-      opacity: 1,
-      transition: {
-        staggerChildren: 0.1
-      }
+export default async function EventsPage({
+  searchParams,
+}: EventsPageProps) {
+  // Lấy tham số từ URL (đảm bảo đúng kiểu dữ liệu)
+  const { page, limit, search, status } = await searchParams;
+  
+  // Lấy dữ liệu sự kiện từ server
+  let eventsData;
+  
+  try {
+    if (search) {
+      eventsData = await eventsService.searchEvents(search, page ? parseInt(page, 10) : undefined, limit ? parseInt(limit, 10) : undefined  );
+    } else if (status) {
+      eventsData = await eventsService.getEventsByStatus(status as any, page ? parseInt(page, 10) : undefined, limit ? parseInt(limit, 10) : undefined);
+    } else {
+      eventsData = await eventsService.getPublicEvents(page ? parseInt(page, 10) : undefined, limit ? parseInt(limit, 10) : undefined);
     }
-  };
-
-  const item = {
-    hidden: { opacity: 0, y: 20 },
-    show: { opacity: 1, y: 0 }
-  };
+    console.log("eventsData", eventsData);
+    console.log("eventsData.data", eventsData.data);
+    console.log("eventsData.pagination", eventsData.pagination);
+  } catch (error) {
+    console.error("Lỗi khi lấy dữ liệu sự kiện:", error);
+    eventsData = { data: [], pagination: { total: 0, totalPages: 0, currentPage: 1, perPage: 10, hasNext: false, hasPrevious: false } };
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-background to-muted/20">
       <div className="container mx-auto px-4 py-16">
         <div className="max-w-6xl mx-auto">
-          <motion.div 
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-            className="text-center mb-16"
-          >
+          <div className="text-center mb-16">
             <h1 className="text-4xl font-bold mb-6 bg-clip-text text-transparent bg-gradient-to-r from-primary to-primary/60">
               Sự kiện hiến máu
             </h1>
             <p className="text-lg text-muted-foreground max-w-2xl mx-auto leading-relaxed">
               Dưới đây là danh sách các sự kiện hiến máu. Hãy tham gia và góp phần cứu sống những người cần máu.
             </p>
-          </motion.div>
+          </div>
 
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.4 }}
-          >
-            <EventsList 
-              events={filteredEvents || []} 
-              isLoading={isEventsLoading}
-              onSearch={handleSearch}
-              onFilterStatus={handleStatusFilter}
-            />
-          </motion.div>
+          <EventsClientContainer 
+            initialEvents={eventsData.data} 
+            initialPagination={eventsData.pagination} 
+            initialSearch={search}
+            initialStatus={status}
+          />
         </div>
       </div>
     </div>

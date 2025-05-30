@@ -77,7 +77,7 @@ export const volunteerCenterRegisterSchema = z.object({
   IdPhuong: z.string({
     required_error: "Vui lòng chọn phường/xã",
   }),
-  MinhChung: z.string().optional(),
+  MinhChung: z.any(), // Cho phép cả string, File và null
   Email: z.string()
     .email("Email không hợp lệ")
     .regex(emailRegex, "Email không đúng định dạng"),
@@ -90,7 +90,7 @@ export const volunteerCenterRegisterSchema = z.object({
     .max(50, "Mật khẩu không được vượt quá 50 ký tự"),
   XacNhanMatKhau: z.string()
     .min(1, "Vui lòng xác nhận mật khẩu"),
-  MaVaiTro: z.enum(["ROLE_VOLUNTEER"] as const).optional(),
+  MaVaiTro: z.enum(["ROLE_VOLUNTEER_MANAGER"] as const).optional(),
 }).superRefine(validatePasswordMatch);
 
 // Định nghĩa kiểu dữ liệu từ schema

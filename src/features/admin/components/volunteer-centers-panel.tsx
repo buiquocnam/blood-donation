@@ -4,11 +4,16 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { SearchFilter } from './search-filter';
 import { VolunteersTable } from './volunteers-table';
 import { useAdminVolunteers } from '../hooks';
+import { COSOTINHNGUYEN_WithLocation } from '@/types';
+
+interface VolunteerCentersPanelProps {
+  initialVolunteerCenters: COSOTINHNGUYEN_WithLocation[];
+}
 
 /**
  * Panel quản lý cơ sở tình nguyện
  */
-export function VolunteerCentersPanel() {
+export function VolunteerCentersPanel({ initialVolunteerCenters }: VolunteerCentersPanelProps) {
   const {
     volunteerCenters,
     isLoading,
@@ -16,7 +21,7 @@ export function VolunteerCentersPanel() {
     setFilter,
     updateStatus,
     deleteCenter
-  } = useAdminVolunteers();
+  } = useAdminVolunteers(initialVolunteerCenters);
 
   return (
     <Card>

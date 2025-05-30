@@ -2,6 +2,8 @@
  * Feedback components for medical staff feature
  */
 
-export * from './FeedbacksList';
-export * from './UpdateFeedbackStatusDialog'; 
-export * from './FeedbackStatusBadge';
+export { FeedbacksList } from './FeedbacksList';
+export { FeedbackStatusBadge } from './FeedbackStatusBadge';
+export { FeedbackActionButton } from './FeedbackActionButton';
+export { UpdateFeedbackStatusDialog } from './UpdateFeedbackStatusDialog';
+export { FeedbackSearchBar } from './FeedbackSearchBar';

@@ -18,10 +18,13 @@ interface EventsListProps {
   onFilterStatus?: (status: TrangThaiSuKien | null) => void;
 }
 
-export function EventsList({ events, isLoading, onSearch, onFilterStatus }: EventsListProps) {
+export function EventsList({ events = [], isLoading, onSearch, onFilterStatus }: EventsListProps) {
   const [localSearch, setLocalSearch] = useState("");
   const [localFilter, setLocalFilter] = useState<string>("all");
   const [isSearchExpanded, setIsSearchExpanded] = useState(false);
+
+  // Đảm bảo events luôn là một mảng
+  const safeEvents = Array.isArray(events) ? events : [];
 
   // Xử lý tìm kiếm local nếu không có onSearch
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -62,17 +65,17 @@ export function EventsList({ events, isLoading, onSearch, onFilterStatus }: Even
 
   // Lọc sự kiện local nếu không có onFilterStatus và onSearch
   const filteredEvents = !onFilterStatus || !onSearch
-    ? events.filter(event => {
+    ? safeEvents.filter(event => {
         const matchesSearch = !localSearch || 
-          event.ThongBao?.TieuDe.toLowerCase().includes(localSearch.toLowerCase()) ||
-          event.CoSoTinhNguyen?.TenCoSoTinhNguyen.toLowerCase().includes(localSearch.toLowerCase()) ||
-          event.CoSoTinhNguyen?.DiaChi.toLowerCase().includes(localSearch.toLowerCase());
+          (event.ThongBao?.TieuDe?.toLowerCase() || "").includes(localSearch.toLowerCase()) ||
+          (event.CoSoTinhNguyen?.TenCoSoTinhNguyen?.toLowerCase() || "").includes(localSearch.toLowerCase()) ||
+          (event.CoSoTinhNguyen?.DiaChi?.toLowerCase() || "").includes(localSearch.toLowerCase());
         
         const matchesFilter = localFilter === "all" || event.TrangThaiSuKien === localFilter;
         
         return matchesSearch && matchesFilter;
       })
-    : events;
+    : safeEvents;
 
   if (isLoading) {
     return (
@@ -199,9 +202,9 @@ export function EventsList({ events, isLoading, onSearch, onFilterStatus }: Even
           animate="show"
           className="grid grid-cols-1 gap-6"
         >
-          {filteredEvents.map((event) => (
-            <motion.div key={event.IdSuKien} variants={item}>
-              <EventCard event={event} />
+          {filteredEvents.map((event, index) => (
+            <motion.div key={event.IdSuKien || `event-${index}`} variants={item}>
+              <EventCard event={event}  />
             </motion.div>
           ))}
         </motion.div>

@@ -1,64 +1,51 @@
 'use client';
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { useAdminUsers } from '../hooks';
-import { useAdminVolunteers } from '../hooks';
-import { UserIcon, Building2 } from 'lucide-react';
+import { Users, Building2, Activity } from 'lucide-react';
+
+interface DashboardStatsProps {
+  userCount: number;
+  volunteerCenterCount: number;
+}
 
 /**
- * Component hiển thị thống kê tổng quan cho admin
+ * Component hiển thị thống kê tổng quan cho Admin Dashboard
  */
-export function DashboardStats() {
-  const { users } = useAdminUsers();
-  const { volunteerCenters } = useAdminVolunteers();
-
-  // Lọc người dùng thông thường (vai trò là ROLE_DONOR)
-  const normalUsers = users.filter(user => user.MaVaiTro === 'ROLE_DONOR');
-
-  const stats = [
-    {
-      title: 'Tổng người dùng',
-      value: users.length,
-      description: 'Tổng số tài khoản trên hệ thống',
-      icon: <UserIcon className="h-5 w-5 text-blue-600" />,
-      color: 'bg-blue-50'
-    },
-    {
-      title: 'Người hiến máu',
-      value: normalUsers.length,
-      description: 'Số lượng tài khoản người hiến máu',
-      icon: <UserIcon className="h-5 w-5 text-green-600" />,
-      color: 'bg-green-50'
-    },
-    {
-      title: 'Cơ sở tình nguyện',
-      value: volunteerCenters.length,
-      description: 'Số lượng cơ sở tình nguyện đăng ký',
-      icon: <Building2 className="h-5 w-5 text-purple-600" />,
-      color: 'bg-purple-50'
-    }
-  ];
-
+export function DashboardStats({ userCount, volunteerCenterCount }: DashboardStatsProps) {
   return (
-    <div className="grid gap-4 grid-cols-1 md:grid-cols-3">
-      {stats.map((stat, index) => (
-        <Card key={index}>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">
-              {stat.title}
-            </CardTitle>
-            <div className={`${stat.color} p-2 rounded-full`}>
-              {stat.icon}
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stat.value}</div>
-            <p className="text-xs text-muted-foreground">
-              {stat.description}
-            </p>
-          </CardContent>
-        </Card>
-      ))}
+    <div className="grid gap-4 md:grid-cols-3">
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <CardTitle className="text-sm font-medium">Tổng số người dùng</CardTitle>
+          <Users className="h-4 w-4 text-muted-foreground" />
+        </CardHeader>
+        <CardContent>
+          <div className="text-2xl font-bold">{userCount}</div>
+          <p className="text-xs text-muted-foreground">Đang hoạt động</p>
+        </CardContent>
+      </Card>
+      
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <CardTitle className="text-sm font-medium">Cơ sở tình nguyện</CardTitle>
+          <Building2 className="h-4 w-4 text-muted-foreground" />
+        </CardHeader>
+        <CardContent>
+          <div className="text-2xl font-bold">{volunteerCenterCount}</div>
+          <p className="text-xs text-muted-foreground">Đăng ký hoạt động</p>
+        </CardContent>
+      </Card>
+      
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <CardTitle className="text-sm font-medium">Hoạt động hiến máu</CardTitle>
+          <Activity className="h-4 w-4 text-muted-foreground" />
+        </CardHeader>
+        <CardContent>
+          <div className="text-2xl font-bold">12</div>
+          <p className="text-xs text-muted-foreground">Trong tháng này</p>
+        </CardContent>
+      </Card>
     </div>
   );
 } 

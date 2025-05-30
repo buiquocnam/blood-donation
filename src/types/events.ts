@@ -76,7 +76,7 @@ export interface DANGKIHIENMAU {
 // Bảng PHANHOI (Phản hồi)
 export interface PHANHOI {
   MaPhanHoi: string; // MAPHANHOI in DB
-  MaDKiKienMau: string; // MADKIKIENMAU in DB
+  MaDKiHienMau: string; // MADKIHIENMAU in DB
   TinhTrangMoTa: string; // TINHTRANGMOTA in DB
   NgayPhanHoi: string; // NGAYPHANHOI in DB (DATETIME)
 }

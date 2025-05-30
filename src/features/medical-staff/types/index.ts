@@ -1,22 +1,31 @@
-import { PHANHOI, DANGKIHIENMAU, DANGKITOCHUCHIENMAU } from '@/types';
+import { PHANHOI, DANGKIHIENMAU, DANGKITOCHUCHIENMAU, DANHMUCDVMAU } from '@/types';
 import { NGUOIDUNG } from '@/types';
 
+
 /**
- * Thông tin chi tiết về một lần hiến máu
+ * Interface cho dữ liệu đăng ký hiến máu chi tiết
  */
-export interface BloodDonation {
-  MaDKiHienMau: string;
-  IdNguoiHienMau: string;
-  HoTen: string;
-  MaNhomMau: string;
-  ChieuCao: number;
-  CanNang: number;
-  NhietDo: number;
-  NhipTim: number;
-  HuyetAp: string;
-  TrangThaiHienMau: string;
-  NgayHienMau: string;
+export interface DonationRegistrationResponse extends DANGKIHIENMAU{
+  NGUOIHIENMAU: {
+    MaNguoiDung: string;
+    HoTen: string;
+    SDT: string;
+    Email: string;
+    NgaySinh: string;
+    GioiTinh: boolean;
+    MaNhomMau: string;
+  };
+  DANGKITOCHUCHIENMAU: {
+    IdSuKien: string;
+  };
+  DANHMUCDVMAU: {
+    IdDanhMucDVHienMau: string;
+    SoLuongMau: number;
+    GhiChu: string;
+  };
 }
+
+
 
 /**
  * Dữ liệu cập nhật trạng thái hiến máu
@@ -30,6 +39,8 @@ export interface UpdateDonationStatusData {
   TTSKSauHien?: string;
   GhiChu?: string;
 }
+
+
 
 /**
  * Tham số duyệt đăng ký hiến máu

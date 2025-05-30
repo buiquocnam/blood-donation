@@ -1,4 +1,4 @@
- 'use client';
+'use client';
 
 import { useState } from 'react';
 import {
@@ -21,18 +21,20 @@ import {
   CardTitle,
   CardDescription 
 } from '@/components/ui/card';
-import { format } from 'date-fns';
-import { vi } from 'date-fns/locale';
-import { DANGKIHIENMAU, NGUOIDUNG, TrangThaiDangKy } from '@/types';
-import { useRegistrationDetail } from '@/features/medical-staff/hooks';
+import {formatDate} from '@/lib/utils';
+import { TrangThaiDangKy } from '@/types';
+import { useDonorInfo } from '@/features/medical-staff/hooks';
 import { Skeleton } from '@/components/ui/skeleton';
+import { DonationRegistrationResponse } from '@/features/medical-staff/types';
+import { toast } from 'sonner';
 
 interface ApproveRegistrationDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  registrationId: string;
+  registration: DonationRegistrationResponse;
   onApprove: (registrationId: string, status: string, note?: string) => void;
   viewOnly?: boolean;
+  isSubmitting?: boolean;
 }
 
 /**
@@ -41,42 +43,35 @@ interface ApproveRegistrationDialogProps {
 export function ApproveRegistrationDialog({
   open,
   onOpenChange,
-  registrationId,
+  registration,
   onApprove,
   viewOnly = false,
+  isSubmitting = false,
 }: ApproveRegistrationDialogProps) {
   const [status, setStatus] = useState<string>(TrangThaiDangKy.DA_DUYET);
   const [note, setNote] = useState('');
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [activeTab, setActiveTab] = useState('donor-info');
   
   // Sử dụng hook để lấy thông tin chi tiết
   const { 
-    registration, 
-    donor, 
+    donorData, 
     isLoading 
-  } = useRegistrationDetail(open ? registrationId : null);
-  
-  // Format date to Vietnamese format
-  const formatDate = (dateString: string) => {
-    try {
-      return format(new Date(dateString), 'HH:mm - dd/MM/yyyy', { locale: vi });
-    } catch (e) {
-      return dateString;
-    }
-  };
+  } = useDonorInfo(registration.NGUOIHIENMAU?.MaNguoiDung);
+  console.log("donorData", donorData);
+
   
   const handleSubmit = async () => {
-    if (!registrationId) return;
+    if (!registration.MaDKiHienMau) {
+      toast.error('ID đơn đăng ký không hợp lệ');
+      return;
+    }
     
     try {
-      setIsSubmitting(true);
-      await onApprove(registrationId, status, note);
-      onOpenChange(false);
+      await onApprove(registration.MaDKiHienMau, status, note);
+      // Dialog sẽ đóng khi thành công qua callback
     } catch (error) {
       console.error('Lỗi khi duyệt đơn:', error);
-    } finally {
-      setIsSubmitting(false);
+      // Không cần hiển thị toast ở đây vì handleApprove đã xử lý
     }
   };
   
@@ -98,7 +93,7 @@ export function ApproveRegistrationDialog({
             <Skeleton className="h-48 w-full" />
             <Skeleton className="h-48 w-full" />
           </div>
-        ) : registration ? (
+        ) : (
           <div className="space-y-4 py-2">
             <Tabs 
               defaultValue="donor-info" 
@@ -118,44 +113,51 @@ export function ApproveRegistrationDialog({
                   <CardHeader className="pb-2">
                     <CardTitle>Thông tin cá nhân</CardTitle>
                   </CardHeader>
-                  <CardContent className="grid grid-cols-2 gap-4">
-                    <div className="space-y-1">
-                      <p className="text-sm font-medium text-muted-foreground">Họ và tên:</p>
-                      <p>{donor?.HoTen || 'Không xác định'}</p>
-                    </div>
-                    <div className="space-y-1">
-                      <p className="text-sm font-medium text-muted-foreground">Nhóm máu:</p>
-                      <p>{donor?.MaNhomMau || 'Không xác định'}</p>
-                    </div>
-                    <div className="space-y-1">
-                      <p className="text-sm font-medium text-muted-foreground">Số điện thoại:</p>
-                      <p>{donor?.SDT || 'Không xác định'}</p>
-                    </div>
-                    <div className="space-y-1">
-                      <p className="text-sm font-medium text-muted-foreground">Email:</p>
-                      <p>{donor?.Email || 'Không xác định'}</p>
-                    </div>
-                    <div className="space-y-1">
-                      <p className="text-sm font-medium text-muted-foreground">Ngày sinh:</p>
-                      <p>{donor?.NgaySinh ? formatDate(donor.NgaySinh) : 'Không xác định'}</p>
-                    </div>
-                    <div className="space-y-1">
-                      <p className="text-sm font-medium text-muted-foreground">Giới tính:</p>
-                      <p>{donor?.GioiTinh ? 'Nam' : 'Nữ'}</p>
-                    </div>
-                    <div className="space-y-1 col-span-2">
-                      <p className="text-sm font-medium text-muted-foreground">Địa chỉ:</p>
-                      <p>{donor?.tenDiaChi || 'Không xác định'}</p>
-                    </div>
-                    <div className="space-y-1">
-                      <p className="text-sm font-medium text-muted-foreground">CCCD:</p>
-                      <p>{donor?.CCCD || 'Không xác định'}</p>
-                    </div>
-                    <div className="space-y-1">
-                      <p className="text-sm font-medium text-muted-foreground">Ngày đăng ký:</p>
-                      <p>{formatDate(registration.NgayDangKi)}</p>
-                    </div>
-                  </CardContent>
+                  {donorData ? (
+                    <CardContent className="grid grid-cols-2 gap-4">
+                      <div className="space-y-1">
+                        <p className="text-sm font-medium text-muted-foreground">Họ và tên:</p>
+                        <p>{donorData?.HoTen || 'Không xác định'}</p>
+                      </div>
+                      <div className="space-y-1">
+                        <p className="text-sm font-medium text-muted-foreground">Nhóm máu:</p>
+                        <p>{donorData?.MaNhomMau || 'Không xác định'}</p>
+                      </div>
+                      <div className="space-y-1">
+                        <p className="text-sm font-medium text-muted-foreground">Số điện thoại:</p>
+                        <p>{donorData?.SDT || 'Không xác định'}</p>
+                      </div>
+                      <div className="space-y-1">
+                        <p className="text-sm font-medium text-muted-foreground">Email:</p>
+                        <p>{donorData?.Email || 'Không xác định'}</p>
+                      </div>
+                      <div className="space-y-1">
+                        <p className="text-sm font-medium text-muted-foreground">Ngày sinh:</p>
+                        <p>{donorData?.NgaySinh ? formatDate(donorData.NgaySinh) : 'Không xác định'}</p>
+                      </div>
+                      <div className="space-y-1">
+                        <p className="text-sm font-medium text-muted-foreground">Giới tính:</p>
+                        <p>{donorData?.GioiTinh ? 'Nam' : 'Nữ'}</p>
+                      </div>
+                      <div className="space-y-1 col-span-2">
+                        <p className="text-sm font-medium text-muted-foreground">Địa chỉ:</p>
+                        <p>{donorData?.tenDiaChi || 'Không xác định'}</p>
+                      </div>
+                      <div className="space-y-1">
+                        <p className="text-sm font-medium text-muted-foreground">CCCD:</p>
+                        <p>{donorData?.CCCD || 'Không xác định'}</p>
+                      </div>
+                      <div className="space-y-1">
+                        <p className="text-sm font-medium text-muted-foreground">Ngày đăng ký:</p>
+                        <p>{formatDate(registration.NgayDangKi)}</p>
+                      </div>
+                    </CardContent>
+                  ) : (
+                    <CardContent className="text-center py-6">
+                      <p className="text-muted-foreground">Không thể tải thông tin người hiến máu</p>
+                      <p className="text-sm text-muted-foreground mt-1">ID: {registration.IdNguoiHienMau || 'Không xác định'}</p>
+                    </CardContent>
+                  )}
                 </Card>
               </TabsContent>
               
@@ -284,8 +286,6 @@ export function ApproveRegistrationDialog({
               </Card>
             )}
           </div>
-        ) : (
-          <div className="py-4 text-center">Không tìm thấy thông tin đăng ký hoặc có lỗi xảy ra</div>
         )}
         
         <DialogFooter className="sm:justify-between">

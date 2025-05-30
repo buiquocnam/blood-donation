@@ -3,7 +3,7 @@
 import { useState, useCallback } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { MedicalStaffService } from '../services';
-import { BloodDonation } from '../types';
+import { DonationRegistrationResponse } from '../types';
 import { UpdateDonationStatusData } from '../types';
 
 /**
@@ -18,12 +18,13 @@ export function useDonations(eventId: string) {
   
   const queryClient = useQueryClient();
   
+  // Lấy danh sách hiến máu
   const {
     data: donations = [],
     isLoading,
     error,
     refetch
-  } = useQuery<BloodDonation[]>({
+    } = useQuery<DonationRegistrationResponse[]>({
     queryKey: ['donations', eventId],
     queryFn: () => MedicalStaffService.getDonationsByEvent(eventId),
     enabled: !!eventId
@@ -35,7 +36,7 @@ export function useDonations(eventId: string) {
     
     return donation.MaDKiHienMau.toLowerCase().includes(searchTerm.toLowerCase()) ||
            donation.IdNguoiHienMau.toLowerCase().includes(searchTerm.toLowerCase()) ||
-           (donation.HoTen && donation.HoTen.toLowerCase().includes(searchTerm.toLowerCase()));
+           (donation.NGUOIHIENMAU.HoTen && donation.NGUOIHIENMAU.HoTen.toLowerCase().includes(searchTerm.toLowerCase()));
   });
   
   // Xử lý mở dialog cập nhật trạng thái hiến máu

@@ -13,22 +13,33 @@ import { useAuthStore } from "@/features/auth/store/auth-store";
 import { AuthService } from "@/features/auth/services/auth-service";
 import { toast } from "sonner";
 import { mockNhomMau } from "@/mock/users";
-import { mockThanhPho, mockQuan, mockPhuong } from "@/mock/location";
+import { THANHPHO, QUAN, PHUONG } from "@/types/location";
+import { locationService } from "@/features/public/services";
+import { useRouter } from "next/navigation";
+import React from "react";
 
 interface UserRegisterFormProps {
   onSuccess?: () => void;
+  initialCities?: THANHPHO[];
 }
 
-export function UserRegisterForm({ onSuccess }: UserRegisterFormProps) {
+function UserRegisterFormComponent({ onSuccess, initialCities = [] }: UserRegisterFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [selectedCity, setSelectedCity] = useState<string>("");
   const [selectedDistrict, setSelectedDistrict] = useState<string>("");
-  const [availableDistricts, setAvailableDistricts] = useState<Array<{IdQuan: string, TenQuan: string}>>([]);
-  const [availableWards, setAvailableWards] = useState<Array<{IdPhuong: string, TenPhuong: string}>>([]);
+  const [cities, setCities] = useState<THANHPHO[]>(initialCities);
+  const [availableDistricts, setAvailableDistricts] = useState<QUAN[]>([]);
+  const [availableWards, setAvailableWards] = useState<PHUONG[]>([]);
+  const [isLoading, setIsLoading] = useState({
+    cities: false,
+    districts: false,
+    wards: false
+  });
   
+  const router = useRouter();
   const { register: registerUser } = useAuthStore();
-
+  
   const {
     register,
     handleSubmit,
@@ -53,32 +64,82 @@ export function UserRegisterForm({ onSuccess }: UserRegisterFormProps) {
     },
   });
 
+  // Lấy danh sách thành phố khi component mount (chỉ khi không có initialCities)
+  useEffect(() => {
+    // Nếu đã có initialCities từ server, không cần fetch lại
+    if (initialCities && initialCities.length > 0) {
+      setCities(initialCities);
+      return;
+    }
+
+    const fetchCities = async () => {
+      setIsLoading(prev => ({ ...prev, cities: true }));
+      try {
+        const citiesData = await locationService.getCities();
+        setCities(citiesData);
+      } catch (error) {
+        console.error("Lỗi khi lấy danh sách thành phố:", error);
+        toast.error("Không thể tải danh sách thành phố");
+      } finally {
+        setIsLoading(prev => ({ ...prev, cities: false }));
+      }
+    };
+    
+    fetchCities();
+  }, [initialCities]);
+
   // Update available districts when city changes
   useEffect(() => {
-    if (selectedCity) {
-      const filteredDistricts = mockQuan.filter((district: {IdThanhPho: string}) => district.IdThanhPho === selectedCity);
-      setAvailableDistricts(filteredDistricts);
-      setSelectedDistrict("");
-      setAvailableWards([]);
-      setValue("IdPhuong", "");
-    } else {
-      setAvailableDistricts([]);
-      setSelectedDistrict("");
-      setAvailableWards([]);
-      setValue("IdPhuong", "");
-    }
+    const fetchDistricts = async () => {
+      if (!selectedCity) {
+        setAvailableDistricts([]);
+        setSelectedDistrict("");
+        setAvailableWards([]);
+        setValue("IdPhuong", "");
+        return;
+      }
+
+      setIsLoading(prev => ({ ...prev, districts: true }));
+      try {
+        const districtsData = await locationService.getDistrictsByCity(selectedCity);
+        setAvailableDistricts(districtsData);
+        setSelectedDistrict("");
+        setAvailableWards([]);
+        setValue("IdPhuong", "");
+      } catch (error) {
+        console.error(`Lỗi khi lấy danh sách quận cho thành phố ${selectedCity}:`, error);
+        toast.error("Không thể tải danh sách quận/huyện");
+      } finally {
+        setIsLoading(prev => ({ ...prev, districts: false }));
+      }
+    };
+
+    fetchDistricts();
   }, [selectedCity, setValue]);
 
   // Update available wards when district changes
   useEffect(() => {
-    if (selectedDistrict) {
-      const filteredWards = mockPhuong.filter((ward: {IdQuan: string}) => ward.IdQuan === selectedDistrict);
-      setAvailableWards(filteredWards);
-      setValue("IdPhuong", "");
-    } else {
-      setAvailableWards([]);
-      setValue("IdPhuong", "");
-    }
+    const fetchWards = async () => {
+      if (!selectedDistrict) {
+        setAvailableWards([]);
+        setValue("IdPhuong", "");
+        return;
+      }
+
+      setIsLoading(prev => ({ ...prev, wards: true }));
+      try {
+        const wardsData = await locationService.getWardsByDistrict(selectedDistrict);
+        setAvailableWards(wardsData);
+        setValue("IdPhuong", "");
+      } catch (error) {
+        console.error(`Lỗi khi lấy danh sách phường cho quận ${selectedDistrict}:`, error);
+        toast.error("Không thể tải danh sách phường/xã");
+      } finally {
+        setIsLoading(prev => ({ ...prev, wards: false }));
+      }
+    };
+
+    fetchWards();
   }, [selectedDistrict, setValue]);
 
   const onSubmit: SubmitHandler<UserRegisterFormData> = async (data) => {
@@ -98,7 +159,12 @@ export function UserRegisterForm({ onSuccess }: UserRegisterFormProps) {
       
       toast.success("Đăng ký thành công");
       
-      // Gọi callback thành công nếu có
+      // Chuyển hướng đến trang chính sau khi đăng ký thành công
+      setTimeout(() => {
+        router.push('/');
+      }, 2000);
+      
+      // Gọi callback thành công nếu có (cho khả năng tương thích ngược)
       if (onSuccess) onSuccess();
     } catch (error: any) {
       toast.error(error.message || "Đăng ký thất bại, vui lòng thử lại");
@@ -242,9 +308,12 @@ export function UserRegisterForm({ onSuccess }: UserRegisterFormProps) {
                 id="city"
                 className="w-full px-3 py-2 border border-input rounded-md"
                 onChange={(e) => setSelectedCity(e.target.value)}
+                disabled={isLoading.cities}
               >
-                <option value="">Chọn thành phố</option>
-                {mockThanhPho.map((city: {IdThanhPho: string, TenThanhPho: string}) => (
+                <option value="">
+                  {isLoading.cities ? "Đang tải..." : "Chọn thành phố"}
+                </option>
+                {cities.map((city) => (
                   <option key={city.IdThanhPho} value={city.IdThanhPho}>
                     {city.TenThanhPho}
                   </option>
@@ -258,10 +327,14 @@ export function UserRegisterForm({ onSuccess }: UserRegisterFormProps) {
                 id="district"
                 className="w-full px-3 py-2 border border-input rounded-md"
                 onChange={(e) => setSelectedDistrict(e.target.value)}
-                disabled={!selectedCity}
+                disabled={!selectedCity || isLoading.districts}
               >
                 <option value="">
-                  {selectedCity ? "Chọn quận/huyện" : "Vui lòng chọn thành phố trước"}
+                  {isLoading.districts 
+                    ? "Đang tải..." 
+                    : selectedCity 
+                      ? "Chọn quận/huyện" 
+                      : "Vui lòng chọn thành phố trước"}
                 </option>
                 {availableDistricts.map((district) => (
                   <option key={district.IdQuan} value={district.IdQuan}>
@@ -277,10 +350,14 @@ export function UserRegisterForm({ onSuccess }: UserRegisterFormProps) {
                 id="ward"
                 className={`w-full px-3 py-2 border rounded-md ${errors.IdPhuong ? "border-red-500" : "border-input"}`}
                 onChange={(e) => setValue("IdPhuong", e.target.value)}
-                disabled={!selectedDistrict}
+                disabled={!selectedDistrict || isLoading.wards}
               >
                 <option value="">
-                  {selectedDistrict ? "Chọn phường/xã" : "Vui lòng chọn quận/huyện trước"}
+                  {isLoading.wards 
+                    ? "Đang tải..." 
+                    : selectedDistrict 
+                      ? "Chọn phường/xã" 
+                      : "Vui lòng chọn quận/huyện trước"}
                 </option>
                 {availableWards.map((ward) => (
                   <option key={ward.IdPhuong} value={ward.IdPhuong}>
@@ -357,9 +434,17 @@ export function UserRegisterForm({ onSuccess }: UserRegisterFormProps) {
         </div>
       </div>
 
-      <Button type="submit" className="w-full bg-primary hover:bg-primary/90" disabled={isSubmitting}>
-        {isSubmitting ? "Đang đăng ký..." : "Đăng ký"}
-      </Button>
+      <div className="col-span-1 md:col-span-2">
+        <Button
+          type="submit"
+          className="w-full"
+          disabled={isSubmitting}
+        >
+          {isSubmitting ? "Đang xử lý..." : "Đăng ký"}
+        </Button>
+      </div>
     </form>
   );
-} 
+}
+
+export const UserRegisterForm = React.memo(UserRegisterFormComponent); 

@@ -1,10 +1,13 @@
 import { LoginCredentials, RegisterData, AuthUser, VolunteerCenterRegisterData } from "@/features/auth/types";
 import { AUTH_ENDPOINTS } from "@/lib/api/endpoints";
 import { NGUOIDUNG, COSOTINHNGUYEN } from "@/types";
-import { mockNguoiDung } from "@/mock/users";
-import { mockCoSoTinhNguyen } from "@/mock/volunteers";
 import api from "@/lib/api/client";
-import router from "next/router";
+
+// Cấu trúc response từ API
+export interface ApiResponse<T> {
+  code: number;
+  result: T;
+}
 
 /**
  * Dịch vụ xác thực người dùng
@@ -14,62 +17,20 @@ export class AuthService {
   /**
    * Đăng nhập
    * @param credentials Thông tin đăng nhập
-   * @returns NGUOIDUNG_WithRole hoặc COSOTINHNGUYEN_WithLocation tùy theo loại tài khoản
+   * @returns ApiResponse với user data và token
    */
-  public static async login(credentials: LoginCredentials): Promise<AuthUser> {
+  public static async login(credentials: LoginCredentials): Promise<ApiResponse<AuthUser>> {
     try {
-      const response = await api.post(AUTH_ENDPOINTS.LOGIN, credentials);
+      // Sử dụng một endpoint duy nhất cho cả hai loại tài khoản
+      const endpoint = AUTH_ENDPOINTS.LOGIN;
       
-      // Lưu token vào localStorage (được xử lý bởi interceptor trong client.ts)
-      if (response.data.token) {
-        localStorage.setItem('auth_token', response.data.token);
-      }
+      // Gửi request đến API
+      const response = await api.post<ApiResponse<AuthUser>>(endpoint, credentials);
       
+      // Trả về toàn bộ response để store xử lý lưu token
       return response.data;
     } catch (error) {
-      console.error("[AuthService] login error:", error);
-      
-      // Giả lập đăng nhập thành công (chỉ trong quá trình phát triển)
-      // Sẽ được xóa khi triển khai API thực tế
-      if (credentials.email === 'donor@example.com' && credentials.password === 'password') {
-        // Giả lập người dùng thông thường (người hiến máu)
-        return {
-          ...mockNguoiDung[1], // Người dùng với vai trò donor
-          MatKhau: '' // Không trả về mật khẩu
-        };
-      } else if (credentials.email === 'staff@example.com' && credentials.password === 'password') {
-        return {
-          ...mockNguoiDung[2], // Người dùng với vai trò staff
-          MatKhau: '' // Không trả về mật khẩu
-        };
-      } else if (credentials.email === 'doctor@example.com' && credentials.password === 'password') {
-        // Giả lập bác sĩ
-        return {
-          ...mockNguoiDung[3], // Người dùng với vai trò doctor
-          MatKhau: '' // Không trả về mật khẩu
-        };
-      }
-      
-      else if (credentials.email === 'volunteer@example.com' && credentials.password === 'password') {
-        // Giả lập trưởng cơ sở tình nguyện
-        return {
-          ...mockCoSoTinhNguyen[0], // Cơ sở tình nguyện đầu tiên
-          MatKhau: '' // Không trả về mật khẩu
-        };
-      } else if (credentials.email === 'admin@example.com' && credentials.password === 'password') {
-        // Admin
-        return {
-          ...mockNguoiDung[6],
-          MatKhau: '' // Không trả về mật khẩu
-        };
-      } else if (credentials.email === 'director@example.com' && credentials.password === 'password') {
-        // Giám đốc ngân hàng máu
-        return {
-          ...mockNguoiDung[5], // Người dùng với vai trò blood_bank_director
-          MatKhau: '' // Không trả về mật khẩu
-        };
-      }
-      
+      console.error("[AuthService] Lỗi đăng nhập:", error);
       throw new Error('Thông tin đăng nhập không chính xác');
     }
   }
@@ -80,26 +41,19 @@ export class AuthService {
   public static async logout(): Promise<void> {
     try {
       await api.post(AUTH_ENDPOINTS.LOGOUT);
-      // Xóa token từ localStorage
-      if (typeof window !== 'undefined') {
-        localStorage.removeItem('auth_token');
-      }
+      // Không xóa token, để store xử lý
     } catch (error) {
       console.error("[AuthService] logout error:", error);
-      // Không ném lỗi khi đăng xuất để người dùng luôn có thể đăng xuất
-      // Xóa token từ localStorage ngay cả khi API thất bại
-      if (typeof window !== 'undefined') {
-        localStorage.removeItem('auth_token');
-      }
+      throw error; // Trả về lỗi để store xử lý
     }
   }
 
   /**
    * Đăng ký người dùng thông thường (người hiến máu)
    * @param userData Thông tin đăng ký người dùng
-   * @returns Thông tin người dùng đã đăng ký
+   * @returns ApiResponse với user data và token
    */
-  public static async register(userData: RegisterData): Promise<NGUOIDUNG> {
+  public static async register(userData: RegisterData): Promise<ApiResponse<NGUOIDUNG>> {
     try {
       // Chuẩn bị dữ liệu để gửi đến API
       const payload = {
@@ -107,72 +61,52 @@ export class AuthService {
         MaVaiTro: userData.MaVaiTro || 'donor'
       };
 
-      const response = await api.post(AUTH_ENDPOINTS.REGISTER, payload);
+      const response = await api.post<ApiResponse<NGUOIDUNG>>(AUTH_ENDPOINTS.REGISTER, payload);
+      
+      // Trả về toàn bộ response để store xử lý lưu token
       return response.data;
     } catch (error) {
       console.error("[AuthService] register error:", error);
-      
-      // Giả lập đăng ký thành công (chỉ trong quá trình phát triển)
-      // Sẽ được xóa khi triển khai API thực tế
-      const newUser: NGUOIDUNG = {
-        MaNguoiDung: `user_${Date.now().toString(36)}`,
-        MaVaiTro: userData.MaVaiTro || 'donor',
-        HoTen: userData.HoTen,
-        NgaySinh: userData.NgaySinh,
-        Email: userData.Email,
-        SDT: userData.SDT,
-        MatKhau: '',
-        GioiTinh: userData.GioiTinh === '1',
-        CCCD: userData.CCCD,
-        MaNhomMau: userData.MaNhomMau || '',
-        AnhDaiDien: '',
-        tenDiaChi: userData.tenDiaChi,
-        IdPhuong: userData.IdPhuong,
-        TinhTrangTK: true,
-        NgayTao: new Date().toISOString(),
-      };
-      return newUser;
+      throw new Error('Đăng ký thất bại. Vui lòng thử lại sau.');
     }
   }
 
   /**
    * Đăng ký trưởng cơ sở tình nguyện
    * @param data Thông tin đăng ký cơ sở tình nguyện
-   * @returns Thông tin cơ sở tình nguyện đã đăng ký
+   * @returns ApiResponse với center data và token
    */
-  public static async registerVolunteerCenter(data: VolunteerCenterRegisterData): Promise<COSOTINHNGUYEN> {
+  public static async registerVolunteerCenter(data: VolunteerCenterRegisterData): Promise<ApiResponse<COSOTINHNGUYEN>> {
     try {
-      // Đảm bảo các trường tính toán được gán giá trị
+      // Chuẩn bị dữ liệu để gửi đến API
       const payload = {
-        ...data,
+        TenCoSoTinhNguyen: data.TenCoSoTinhNguyen,
+        Email: data.Email,
+        MatKhau: data.MatKhau,
+        SDT: data.SDT,
         NguoiPhuTrach: data.NguoiPhuTrach,
-        UserName: data.UserName || data.Email,
-        MaVaiTro: data.MaVaiTro || 'volunteer_center_manager'
+        UserName: data.UserName || data.Email, // Tự động lấy từ email nếu chưa có
+        DiaChi: data.DiaChi || '',
+        IdPhuong: data.IdPhuong.toString() || '',
+        MaVaiTro: data.MaVaiTro || 'ROLE_VOLUNTEER_MANAGER',
       };
       
-      const response = await api.post(AUTH_ENDPOINTS.REGISTER_VOLUNTEER_CENTER, payload);
+      // Gọi API với dữ liệu JSON
+      const response = await api.post<ApiResponse<COSOTINHNGUYEN>>(
+        AUTH_ENDPOINTS.REGISTER_VOLUNTEER_CENTER, 
+        payload,
+        {
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+      
+      // Trả về toàn bộ response để store xử lý lưu token
       return response.data;
     } catch (error) {
       console.error("[AuthService] registerVolunteerCenter error:", error);
-      
-      // Giả lập đăng ký thành công (chỉ trong quá trình phát triển)
-      // Sẽ được xóa khi triển khai API thực tế
-      const newCenter: COSOTINHNGUYEN = {
-        IDCoSoTinhNguyen: `cs_${Date.now().toString(36)}`,
-        TenCoSoTinhNguyen: data.TenCoSoTinhNguyen,
-        DiaChi: data.DiaChi,
-        SDT: data.SDT,
-        Email: data.Email,
-        IdPhuong: data.IdPhuong,
-        NguoiPhuTrach: data.NguoiPhuTrach,
-        MinhChung: data.MinhChung || '',
-        UserName: data.UserName || data.Email,
-        MatKhau: '',
-        TinhTrang: true,
-        NgayTao: new Date().toISOString(),
-        MaVaiTro: data.MaVaiTro || 'volunteer_center_manager',
-      };
-      return newCenter;
+      throw new Error('Đăng ký cơ sở tình nguyện thất bại. Vui lòng thử lại sau.');
     }
   }
 
@@ -182,11 +116,38 @@ export class AuthService {
    */
   public static async getCurrentUser(): Promise<AuthUser> {
     try {
-      const response = await api.get(AUTH_ENDPOINTS.ME);
-      return response.data;
+      const response = await api.get<ApiResponse<AuthUser>>(AUTH_ENDPOINTS.ME);
+      return response.data.result;
     } catch (error) {
       console.error("[AuthService] getCurrentUser error:", error);
-      throw error;
+      throw new Error('Không thể lấy thông tin người dùng. Vui lòng đăng nhập lại.');
+    }
+  }
+  
+  /**
+   * Kiểm tra phiên đăng nhập
+   * @returns True nếu người dùng đã đăng nhập
+   */
+  public static isAuthenticated(): boolean {
+    if (typeof window === 'undefined') return false;
+    return !!localStorage.getItem('auth_token');
+  }
+  
+  /**
+   * Lấy thông tin người dùng từ localStorage
+   * @returns Thông tin cơ bản của người dùng hoặc null nếu chưa đăng nhập
+   */
+  public static getUserInfo(): { id: string; role: string; name: string; isCenter: boolean } | null {
+    if (typeof window === 'undefined') return null;
+    
+    const userInfo = localStorage.getItem('user_info');
+    if (!userInfo) return null;
+    
+    try {
+      return JSON.parse(userInfo);
+    } catch (error) {
+      console.error("[AuthService] Lỗi khi đọc thông tin người dùng:", error);
+      return null;
     }
   }
 } 

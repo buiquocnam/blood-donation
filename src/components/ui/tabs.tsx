@@ -8,8 +8,8 @@ import { cn } from "@/lib/utils"
  * Định nghĩa type cho context
  */
 type TabsContextType = {
-  value?: string
-  onValueChange?: (value: string) => void
+  value: string
+  onValueChange: (value: string) => void
 }
 
 // Tạo context với type đã định nghĩa
@@ -19,14 +19,14 @@ const TabsContext = React.createContext<TabsContextType | null>(null)
  * Tabs container component
  */
 interface TabsProps extends React.HTMLAttributes<HTMLDivElement> {
-  value?: string
+  value: string
   onValueChange?: (value: string) => void
   children: React.ReactNode
 }
 
 const Tabs = React.forwardRef<HTMLDivElement, TabsProps>(
   ({ children, value, onValueChange, className, ...props }, ref) => (
-    <TabsContext.Provider value={{ value, onValueChange }}>
+    <TabsContext.Provider value={{ value: value || "", onValueChange: onValueChange || (() => {}) }}>
       <div ref={ref} className={cn(className)} {...props}>
         {children}
       </div>

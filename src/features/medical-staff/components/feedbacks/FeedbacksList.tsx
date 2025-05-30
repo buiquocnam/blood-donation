@@ -1,6 +1,3 @@
-'use client';
-
-import { useState } from 'react';
 import { 
   Table, 
   TableBody, 
@@ -9,80 +6,56 @@ import {
   TableHeader, 
   TableRow 
 } from '@/components/ui/table';
-import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
-import { useFeedbacks } from '@/features/medical-staff/hooks';
-import { FeedbackStatusBadge } from '@/features/medical-staff/components/feedbacks/FeedbackStatusBadge';
-import { UpdateFeedbackStatusDialog } from '@/features/medical-staff/components/feedbacks/UpdateFeedbackStatusDialog';
 import { PhanHoiWithUserInfo } from '@/features/medical-staff/types';
 import { formatDate } from '@/utils';
+import { FeedbackStatusBadge } from './FeedbackStatusBadge';
+import { ClientFeedbackSearchBar } from './client-feedback-search-bar';
+import { FeedbackActionButton } from './FeedbackActionButton';
+
+interface FeedbacksListProps {
+  feedbacks: PhanHoiWithUserInfo[];
+  searchQuery?: string;
+}
 
 /**
- * Hiển thị danh sách phản hồi của người hiến máu
+ * Server Component hiển thị danh sách phản hồi của người hiến máu
+ * Không có 'use client' - đây là Server Component để giảm JavaScript gửi đến client
+ * Tuân thủ kiến trúc FFMA: chỉ hiển thị dữ liệu, các phần tương tác được tách ra thành Client Components
  */
-export function FeedbacksList() {
-  const {
-    searchTerm,
-    setSearchTerm,
-    filteredFeedbacks,
-    isLoading,
-    error,
-    updateDialogOpen,
-    setUpdateDialogOpen,
-    selectedFeedback,
-    setSelectedFeedback,
-    handleOpenUpdateDialog,
-  } = useFeedbacks();
-  
-  // Xử lý mở dialog cập nhật trạng thái
-  const handleOpenDialog = (feedbackId: string) => {
-    handleOpenUpdateDialog(feedbackId);
-  };
-  
-  if (isLoading) {
-    return <div className="py-10 text-center">Đang tải danh sách phản hồi...</div>;
-  }
-  
-  if (error) {
-    return (
-      <div className="py-10 text-center text-red-500">
-        Đã xảy ra lỗi khi tải danh sách phản hồi
-      </div>
-    );
-  }
-  
+export function FeedbacksList({ feedbacks, searchQuery }: FeedbacksListProps) {
   return (
     <div className="space-y-4">
-      <div className="flex justify-between items-center">
-        <h3 className="text-lg font-medium">Phản hồi của người hiến máu ({filteredFeedbacks.length})</h3>
-        <Input
-          placeholder="Tìm kiếm theo mã phản hồi, tên người hiến máu..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          className="max-w-sm"
-        />
+      <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
+        <h3 className="text-lg font-medium whitespace-nowrap">
+          Phản hồi của người hiến máu ({feedbacks.length})
+          {searchQuery && <span className="text-sm ml-2 text-muted-foreground">Tìm: "{searchQuery}"</span>}
+        </h3>
+        {/* ClientFeedbackSearchBar là Client Component riêng biệt để xử lý tìm kiếm */}
+        <ClientFeedbackSearchBar />
       </div>
       
-      {filteredFeedbacks.length === 0 ? (
-        <div className="text-center py-10">
-          Không tìm thấy phản hồi phù hợp
+      {feedbacks.length === 0 ? (
+        <div className="text-center py-10 border border-dashed rounded-lg">
+          {searchQuery 
+            ? `Không tìm thấy phản hồi phù hợp với từ khóa "${searchQuery}"`
+            : "Không có phản hồi nào"}
         </div>
       ) : (
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Mã phản hồi</TableHead>
-              <TableHead>Người hiến máu</TableHead>
-              <TableHead>Mã đăng ký</TableHead>
-              <TableHead>Ngày phản hồi</TableHead>
-              <TableHead>Nội dung</TableHead>
-              <TableHead>Trạng thái</TableHead>
-              <TableHead className="text-right">Thao tác</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {filteredFeedbacks.map((feedback: PhanHoiWithUserInfo) => {
-              return (
+        <div className="border rounded-md overflow-auto">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Mã phản hồi</TableHead>
+                <TableHead>Người hiến máu</TableHead>
+                <TableHead>Mã đăng ký</TableHead>
+                <TableHead>Ngày phản hồi</TableHead>
+                <TableHead>Nội dung</TableHead>
+                <TableHead>Trạng thái</TableHead>
+                <TableHead className="text-right">Thao tác</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {feedbacks.map((feedback: PhanHoiWithUserInfo) => (
                 <TableRow key={feedback.MaPhanHoi}>
                   <TableCell className="font-medium">
                     {feedback.MaPhanHoi}
@@ -91,7 +64,7 @@ export function FeedbacksList() {
                     {feedback.NguoiHienMau?.HoTen || 'Không xác định'}
                   </TableCell>
                   <TableCell>
-                    {feedback.MaDKiKienMau}
+                    {feedback.DangKyHienMau?.MaDKiHienMau}
                   </TableCell>
                   <TableCell>
                     {formatDate(feedback.NgayPhanHoi)}
@@ -103,28 +76,14 @@ export function FeedbacksList() {
                     <FeedbackStatusBadge status={feedback.TrangThaiXuLy} />
                   </TableCell>
                   <TableCell className="text-right">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleOpenDialog(feedback.MaPhanHoi)}
-                    >
-                      Xử lý
-                    </Button>
+                    {/* FeedbackActionButton là Client Component riêng biệt để xử lý tương tác */}
+                    <FeedbackActionButton feedback={feedback} />
                   </TableCell>
                 </TableRow>
-              );
-            })}
-          </TableBody>
-        </Table>
-      )}
-      
-      {/* Dialog cập nhật trạng thái xử lý phản hồi */}
-      {selectedFeedback && (
-        <UpdateFeedbackStatusDialog
-          open={updateDialogOpen}
-          onOpenChange={setUpdateDialogOpen}
-          feedbackId={selectedFeedback}
-        />
+              ))}
+            </TableBody>
+          </Table>
+        </div>
       )}
     </div>
   );

@@ -1,68 +1,94 @@
 'use client';
 
-import { useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useState, useEffect, useCallback } from 'react';
 import { COSOTINHNGUYEN_WithLocation } from '@/types';
 import { 
   getAllVolunteerCenters, 
-  getVolunteerCentersByFilter, 
-  updateVolunteerCenterStatus as apiUpdateVolunteerCenterStatus,
-  deleteVolunteerCenter as apiDeleteVolunteerCenter
+  getVolunteerCentersByFilter,
+  updateVolunteerCenterStatus,
+  deleteVolunteerCenter
 } from '../services';
 import { VolunteerCenterFilter } from '../types';
 
 /**
- * Hook quản lý danh sách cơ sở tình nguyện trong giao diện Admin
+ * Hook quản lý danh sách cơ sở tình nguyện
  */
-export function useAdminVolunteers() {
-  const queryClient = useQueryClient();
+export function useAdminVolunteers(
+  initialVolunteerCenters?: COSOTINHNGUYEN_WithLocation[]
+) {
+  // State quản lý danh sách cơ sở tình nguyện
+  const [volunteerCenters, setVolunteerCenters] = useState<COSOTINHNGUYEN_WithLocation[]>(
+    initialVolunteerCenters || []
+  );
+  
+  // State quản lý bộ lọc
   const [filter, setFilter] = useState<VolunteerCenterFilter>({});
-
-  // Query để lấy danh sách cơ sở tình nguyện theo bộ lọc
-  const {
-    data: volunteerCenters = [],
-    isLoading,
-    error,
-    refetch
-  } = useQuery<COSOTINHNGUYEN_WithLocation[]>({
-    queryKey: ['admin', 'volunteer-centers', filter],
-    queryFn: () => getVolunteerCentersByFilter(filter)
-  });
-
-  // Mutation để cập nhật trạng thái cơ sở tình nguyện
-  const updateStatusMutation = useMutation({
-    mutationFn: ({ centerId, status }: { centerId: string; status: boolean }) => 
-      apiUpdateVolunteerCenterStatus(centerId, status),
-    onSuccess: () => {
-      // Làm mới dữ liệu sau khi cập nhật
-      queryClient.invalidateQueries({ queryKey: ['admin', 'volunteer-centers'] });
+  
+  // State loading
+  const [isLoading, setIsLoading] = useState<boolean>(!initialVolunteerCenters);
+  
+  // Fetch cơ sở tình nguyện theo filter
+  const fetchVolunteerCenters = useCallback(async () => {
+    if (filter) {
+      setIsLoading(true);
+      try {
+        const filteredCenters = await getVolunteerCentersByFilter(filter);
+        setVolunteerCenters(filteredCenters);
+      } catch (error) {
+        console.error('Error fetching volunteer centers by filter:', error);
+      } finally {
+        setIsLoading(false);
+      }
     }
-  });
-
-  // Mutation để xóa cơ sở tình nguyện
-  const deleteCenterMutation = useMutation({
-    mutationFn: (centerId: string) => apiDeleteVolunteerCenter(centerId),
-    onSuccess: () => {
-      // Làm mới dữ liệu sau khi xóa
-      queryClient.invalidateQueries({ queryKey: ['admin', 'volunteer-centers'] });
+  }, [filter]);
+  
+  // Cập nhật trạng thái cơ sở tình nguyện
+  const handleUpdateStatus = async (centerId: string, status: boolean) => {
+    try {
+      const response = await updateVolunteerCenterStatus(centerId, status);
+      if (response.success) {
+        // Cập nhật state
+        setVolunteerCenters(prevCenters => prevCenters.map(center => 
+          center.IDCoSoTinhNguyen === centerId ? { ...center, TinhTrang: status } : center
+        ));
+      }
+      return response;
+    } catch (error) {
+      console.error('Error updating volunteer center status:', error);
+      throw error;
     }
-  });
-
-  // Hàm tiện ích để sử dụng trực tiếp
-  const updateStatus = (centerId: string, status: boolean) => {
-    updateStatusMutation.mutate({ centerId, status });
   };
-
+  
+  // Xóa cơ sở tình nguyện
+  const handleDeleteCenter = async (centerId: string) => {
+    try {
+      const response = await deleteVolunteerCenter(centerId);
+      if (response.success) {
+        // Cập nhật state
+        setVolunteerCenters(prevCenters => 
+          prevCenters.filter(center => center.IDCoSoTinhNguyen !== centerId)
+        );
+      }
+      return response;
+    } catch (error) {
+      console.error('Error deleting volunteer center:', error);
+      throw error;
+    }
+  };
+  
+  // Fetch dữ liệu khi component mount hoặc filter thay đổi
+  useEffect(() => {
+    if (!initialVolunteerCenters || Object.keys(filter).length > 0) {
+      fetchVolunteerCenters();
+    }
+  }, [fetchVolunteerCenters, filter, initialVolunteerCenters]);
+  
   return {
     volunteerCenters,
     isLoading,
-    error,
     filter,
     setFilter,
-    refetch,
-    updateStatus,
-    deleteCenter: deleteCenterMutation.mutate,
-    isUpdatingStatus: updateStatusMutation.isPending,
-    isDeleting: deleteCenterMutation.isPending
+    updateStatus: handleUpdateStatus,
+    deleteCenter: handleDeleteCenter
   };
 } 

@@ -1,103 +1,42 @@
 'use client';
 
-import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { useEffect, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { MedicalStaffService } from '../services';
-import { DANGKIHIENMAU, NGUOIDUNG } from '@/types';
-import { mockDangKiHienMau, mockNguoiDung } from '@/mock';
-
-type RegistrationDetailResult = {
-  registration: DANGKIHIENMAU | null;
-  donor: NGUOIDUNG | null;
-  isLoading: boolean;
-  isError: boolean;
-  error: Error | null;
-  refetch: () => void;
-};
+import { NGUOIDUNG } from '@/types';
 
 /**
- * Hook lấy thông tin chi tiết đăng ký hiến máu và người hiến máu
- * @param registrationId ID đơn đăng ký hiến máu
- * @returns Thông tin chi tiết đăng ký và người hiến máu
+ * Hook lấy thông tin chi tiết người hiến máu theo ID
+ * @param userId ID của người hiến máu
+ * @returns Thông tin người hiến máu và trạng thái query
  */
-export function useRegistrationDetail(registrationId: string | null): RegistrationDetailResult {
-  const [donor, setDonor] = useState<NGUOIDUNG | null>(null);
-  const queryClient = useQueryClient();
-
-  // Query lấy thông tin đăng ký
+export function useDonorInfo(userId: string | null) {
   const {
-    data: registration,
-    isLoading: isLoadingRegistration,
-    isError: isErrorRegistration,
-    error: errorRegistration,
-    refetch: refetchRegistration
+    data: donorData,
+    isLoading,
+    isError,
+    error,
+    refetch
   } = useQuery({
-    queryKey: ['registration-detail', registrationId],
+    queryKey: ['donor-info', userId],
     queryFn: async () => {
-      if (!registrationId) return null;
-      try {
-        return await MedicalStaffService.getRegistrationById(registrationId);
-      } catch (error) {
-        console.error(`[useRegistrationDetail] Error fetching registration: ${error}`);
-        
-        // Fallback đến mock data nếu API lỗi
-        const mockReg = mockDangKiHienMau.find(r => r.MaDKiHienMau === registrationId);
-        if (!mockReg) {
-          throw new Error(`Không tìm thấy đăng ký với ID: ${registrationId}`);
-        }
-        return mockReg;
-      }
-    },
-    enabled: !!registrationId,
-    staleTime: 5 * 60 * 1000 // 5 phút
-  });
-
-  // Lấy thông tin người hiến máu khi có thông tin đăng ký
-  useEffect(() => {
-    let isMounted = true;
-    
-    const fetchDonorInfo = async () => {
-      if (!registration?.IdNguoiHienMau) return;
+      if (!userId) return null;
       
       try {
-        const donorData = await MedicalStaffService.getDonorById(registration.IdNguoiHienMau);
-        if (isMounted) {
-          setDonor(donorData);
-        }
+        const data = await MedicalStaffService.getDonorById(userId);
+        return data;
       } catch (error) {
-        console.error(`[useRegistrationDetail] Error fetching donor: ${error}`);
-        
-        // Fallback đến mock data nếu API lỗi
-        if (isMounted) {
-          const mockDonorData = mockNguoiDung.find(u => u.MaNguoiDung === registration.IdNguoiHienMau);
-          setDonor(mockDonorData || null);
-        }
+        console.error(`[useDonorInfo] Error fetching donor info for ${userId}:`, error);
+        throw error;
       }
-    };
-
-    if (registration) {
-      fetchDonorInfo();
-    } else {
-      setDonor(null);
-    }
-
-    // Cleanup để tránh memory leak và race condition
-    return () => {
-      isMounted = false;
-    };
-  }, [registration]);
-
-  // Hàm refetch tổng hợp
-  const refetch = () => {
-    refetchRegistration();
-  };
+    },
+    enabled: !!userId
+  });
 
   return {
-    registration: registration || null,
-    donor,
-    isLoading: isLoadingRegistration,
-    isError: isErrorRegistration,
-    error: errorRegistration as Error | null,
+    donorData,
+    isLoading,
+    isError,
+    error,
     refetch
   };
 } 

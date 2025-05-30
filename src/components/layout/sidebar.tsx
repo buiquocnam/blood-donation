@@ -38,18 +38,13 @@ export function Sidebar() {
       title: "Bảng điều khiển",
       href: (user?.MaVaiTro === "ROLE_DONOR") ? "/donor/dashboard" :
             (user?.MaVaiTro === "ROLE_DOCTOR") ? "/doctor" :
-            (user?.MaVaiTro === "ROLE_VOLUNTEER") ? "/volunteer/dashboard" :
+            (user?.MaVaiTro === "ROLE_VOLUNTEER") ? "/volunteer-center" :
             (user?.MaVaiTro === "ROLE_DIRECTOR") ? "/director/dashboard" :
             (user?.MaVaiTro === "ROLE_ADMIN") ? "/admin/dashboard" : "/dashboard",
       icon: <Home className="h-5 w-5" />,
       roles: ["ROLE_DONOR", "ROLE_DOCTOR", "ROLE_VOLUNTEER", "ROLE_DIRECTOR", "ROLE_ADMIN"],
     },
-    {
-      title: "Hồ sơ cá nhân",
-      href: "/profile",
-      icon: <User className="h-5 w-5" />,
-      roles: ["ROLE_DONOR", "ROLE_MEDICAL", "ROLE_DOCTOR", "ROLE_VOLUNTEER", "ROLE_DIRECTOR", "ROLE_ADMIN"],
-    },
+   
     {
       title: "Lịch sử đăng ký",
       href: "/donor/history/registrations",
@@ -93,12 +88,6 @@ export function Sidebar() {
 
     // Trưởng cơ sở tình nguyện
     {
-      title: "Bảng điều khiển",
-      href: "/volunteer-center",
-      icon: <Home className="h-5 w-5" />,
-      roles: ["ROLE_VOLUNTEER"],
-    },
-    {
       title: "Thông báo hiến máu",
       href: "/volunteer-center?tab=announcements",
       icon: <BellDot className="h-5 w-5" />,
@@ -108,12 +97,6 @@ export function Sidebar() {
       title: "Lịch sử đăng ký",
       href: "/volunteer-center?tab=event-registrations",
       icon: <Calendar className="h-5 w-5" />,
-      roles: ["ROLE_VOLUNTEER"],
-    },
-    {
-      title: "Thông tin cơ sở",
-      href: "/volunteer-center?tab=profile",
-      icon: <Building className="h-5 w-5" />,
       roles: ["ROLE_VOLUNTEER"],
     },
 
@@ -167,6 +150,14 @@ export function Sidebar() {
       href: "/admin/roles",
       icon: <ShieldCheck className="h-5 w-5" />,
       roles: ["ROLE_ADMIN"],
+    },
+
+    // Hồ sơ cá nhân
+    {
+      title: "Hồ sơ cá nhân",
+      href: "/profile",
+      icon: <User className="h-5 w-5" />,
+      roles: ["ROLE_DONOR", "ROLE_MEDICAL", "ROLE_DOCTOR", "ROLE_VOLUNTEER", "ROLE_DIRECTOR", "ROLE_ADMIN"],
     },
   ];
 

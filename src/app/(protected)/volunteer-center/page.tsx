@@ -2,17 +2,50 @@ import { VolunteerCenterTabs } from '@/features/volunteer-center';
 import { mockCoSoTinhNguyen } from '@/mock/volunteers';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Metadata } from 'next';
+import { 
+  fetchAnnouncements, 
+  fetchEventRegistrations, 
+  fetchVolunteerCenterById 
+} from '@/features/volunteer-center/services';
+import { TrangThaiDangKy } from '@/types/common';
 
 export const metadata: Metadata = {
   title: 'Trang quản lý cơ sở tình nguyện',
   description: 'Quản lý thông tin cơ sở tình nguyện, đăng ký tổ chức và hiến máu',
 };
 
-export default function VolunteerCenterDashboardPage() {
-  // In a real application, we would get the current user's ID from the session
-  // For demo purposes, we use the first volunteer center from the mock data
+// Lấy dữ liệu ban đầu từ phía server
+async function fetchInitialData(centerId: string) {
+  const [announcements, eventRegistrations, centerDetails] = await Promise.all([
+    fetchAnnouncements(),
+    fetchEventRegistrations(centerId),
+    fetchVolunteerCenterById(centerId)
+  ]);
+
+  return {
+    announcements,
+    eventRegistrations,
+    centerDetails
+  };
+}
+
+export default async function VolunteerCenterDashboardPage() {
+  // Trong ứng dụng thực tế, chúng ta sẽ lấy ID của người dùng hiện tại từ phiên
+  // Cho mục đích demo, chúng ta sử dụng cơ sở tình nguyện đầu tiên từ dữ liệu mẫu
   const centerId = mockCoSoTinhNguyen[0].IDCoSoTinhNguyen;
   const center = mockCoSoTinhNguyen[0];
+  
+  // Lấy dữ liệu ban đầu từ phía server
+  const initialData = await fetchInitialData(centerId);
+
+  // Tạo thống kê đơn giản để hiển thị
+  const stats = {
+    announcementsCount: initialData.announcements.length,
+    registrationsCount: initialData.eventRegistrations.length,
+    approvedCount: initialData.eventRegistrations.filter(r => r.TinhTrangDK === TrangThaiDangKy.DA_DUYET).length,
+    pendingCount: initialData.eventRegistrations.filter(r => r.TinhTrangDK === TrangThaiDangKy.CHO_DUYET).length,
+    totalBloodUnits: initialData.eventRegistrations.reduce((sum, reg) => sum + reg.SoLuongDK, 0)
+  };
 
   return (
     <div className="container mx-auto px-6 py-6 space-y-8">
@@ -41,7 +74,7 @@ export default function VolunteerCenterDashboardPage() {
             </svg>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">3 thông báo</div>
+            <div className="text-2xl font-bold">{stats.announcementsCount} thông báo</div>
             <p className="text-xs text-muted-foreground">
               +1 thông báo mới so với tuần trước
             </p>
@@ -65,9 +98,9 @@ export default function VolunteerCenterDashboardPage() {
             </svg>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">2 đăng ký</div>
+            <div className="text-2xl font-bold">{stats.registrationsCount} đăng ký</div>
             <p className="text-xs text-muted-foreground">
-              1 đã duyệt, 1 đang chờ duyệt
+              {stats.approvedCount} đã duyệt, {stats.pendingCount} đang chờ duyệt
             </p>
           </CardContent>
         </Card>
@@ -88,7 +121,7 @@ export default function VolunteerCenterDashboardPage() {
             </svg>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">250 đơn vị</div>
+            <div className="text-2xl font-bold">{stats.totalBloodUnits} đơn vị</div>
             <p className="text-xs text-muted-foreground">
               +5% so với kỳ trước
             </p>
@@ -96,7 +129,10 @@ export default function VolunteerCenterDashboardPage() {
         </Card>
       </div>
 
-      <VolunteerCenterTabs centerId={centerId} />
+      <VolunteerCenterTabs 
+        centerId={centerId} 
+        initialData={initialData}
+      />
     </div>
   );
 }

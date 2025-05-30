@@ -4,8 +4,7 @@ import Link from "next/link";
 import { useState, useEffect } from "react";
 import { useAuthStore } from "@/features/auth/store/auth-store";
 import { Button } from "@/components/ui/button";
-import { AuthUser } from "@/features/auth/types";
-import { NGUOIDUNG, COSOTINHNGUYEN } from "@/types";
+import { AuthUser, UserRole } from "@/features/auth/types";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -15,21 +14,12 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { ChevronDown } from "lucide-react";
-
-// Type guard function to check if user is NGUOIDUNG
-function isNguoiDung(user: AuthUser): user is NGUOIDUNG {
-  return 'MaNguoiDung' in user;
-}
-
-// Type guard function to check if user is COSOTINHNGUYEN
-function isCoSoTinhNguyen(user: AuthUser): user is COSOTINHNGUYEN {
-  return 'IDCoSoTinhNguyen' in user;
-}
+import { isNguoiDung } from "@/utils/typeGuards";
 
 // Get display name based on user type
 function getDisplayName(user: AuthUser | null): string {
   if (!user) return 'Tài khoản';
-  return isCoSoTinhNguyen(user) ? user.TenCoSoTinhNguyen : isNguoiDung(user) ? user.HoTen : 'Tài khoản';
+  return isNguoiDung(user) ? user.HoTen : 'Tài khoản';
 }
 
 interface NavItem {
@@ -78,34 +68,34 @@ export function Header() {
     if (!isAuthenticated || !user) return [];
 
     switch (user.MaVaiTro) {
-      case "ROLE_DIRECTOR":
+      case UserRole.ROLE_BLOOD_DIRECTOR:
         return [
           { label: "Quản lý thông báo", href: "/blood-bank/notifications" },
           { label: "Quản lý sự kiện", href: "/blood-bank/events" },
           { label: "Quản lý yêu cầu", href: "/blood-bank/requests" },
           { label: "Báo cáo & thống kê", href: "/blood-bank/reports" },
         ];
-      case "ROLE_VOLUNTEER":
+      case UserRole.ROLE_VOLUNTEER_MANAGER:
         return [
           { label: "Quản lý tình nguyện viên", href: "/volunteer-center/volunteers" },
           { label: "Quản lý sự kiện", href: "/volunteer-center/events" },
         ];
-      case "ROLE_MEDICAL":
+      case UserRole.ROLE_MEDICAL_STAFF:
         return [
           { label: "Quản lý hiến máu", href: "/medical-staff" },
           { label: "Quản lý phản hồi", href: "/medical-staff/feedback" },
         ];
-      case "ROLE_DOCTOR":
+      case UserRole.ROLE_DOCTOR:
         return [
           { label: "Quản lý hiến máu", href: "/doctor" },
         ];
-      case "ROLE_ADMIN":
+      case UserRole.ROLE_ADMIN:
         return [
           { label: "Quản lý người dùng", href: "/admin/users" },
           { label: "Quản lý bệnh viện", href: "/admin/hospitals" },
           { label: "Cài đặt hệ thống", href: "/admin/settings" },
         ];
-      case "ROLE_DONOR":
+      case UserRole.ROLE_DONOR:
         return [
           { label: "Khu vực người hiến máu", href: "/donor/dashboard" },
           { label: "Đăng ký hiến máu", href: "/donor/donations/register" },
@@ -146,17 +136,17 @@ export function Header() {
     if (!user) return "/";
     
     switch (user.MaVaiTro) {
-      case "ROLE_DONOR":
+      case UserRole.ROLE_DONOR:
         return "/donor/dashboard";
-      case "ROLE_MEDICAL":
+      case UserRole.ROLE_MEDICAL_STAFF:
         return "/medical-staff";
-      case "ROLE_DOCTOR":
+      case UserRole.ROLE_DOCTOR:
         return "/doctor";
-      case "ROLE_VOLUNTEER":
+      case UserRole.ROLE_VOLUNTEER_MANAGER:
         return "/volunteer-center";
-      case "ROLE_DIRECTOR":
+      case UserRole.ROLE_BLOOD_DIRECTOR:
         return "/blood-bank/notifications";
-      case "ROLE_ADMIN":
+      case UserRole.ROLE_ADMIN:
         return "/admin";
       default:
         return "/";

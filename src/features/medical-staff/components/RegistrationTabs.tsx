@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { useRegistrationEvents } from '@/features/medical-staff/hooks';
+import { usePublicEvents } from '@/features/public/hooks';
 import { RegistrationsList } from '@/features/medical-staff/components/registrations/RegistrationsList';
 import { DonationsList } from '@/features/medical-staff/components/donations/DonationsList';
 import { ArrowLeft } from 'lucide-react';
@@ -19,7 +19,7 @@ interface RegistrationTabsProps {
 export function RegistrationTabs({ eventId }: RegistrationTabsProps) {
   const [activeTab, setActiveTab] = useState('registrations');
   const router = useRouter();
-  const { events, isLoading } = useRegistrationEvents();
+  const { events, isLoading } = usePublicEvents();
   
   // Tìm sự kiện hiện tại từ danh sách
   const currentEvent = events.find(event => event.IdSuKien === eventId);
@@ -53,11 +53,11 @@ export function RegistrationTabs({ eventId }: RegistrationTabsProps) {
         </TabsList>
         
         <TabsContent value="registrations" className="mt-6">
-          <RegistrationsList eventId={eventId} />
+          <RegistrationsList eventId={eventId} initialRegistrations={[]} />
         </TabsContent>
         
         <TabsContent value="donations" className="mt-6">
-          <DonationsList eventId={eventId} />
+          <DonationsList eventId={eventId} initialDonations={[]} />
         </TabsContent>
       </Tabs>
     </div>
