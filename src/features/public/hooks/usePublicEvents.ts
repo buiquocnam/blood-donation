@@ -14,41 +14,20 @@ export function usePublicEvents() {
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(10);
 
-  // Lấy tất cả sự kiện public
+  // Lấy tất cả sự kiện public và filtered events
   const {
     data: eventsData,
     isLoading,
     error,
     refetch: refetchEvents
   } = useQuery({
-    queryKey: ['public', 'events', { page, limit }],
-    queryFn: () => eventsService.getPublicEvents(page, limit), 
-  });
-
-  // Lấy sự kiện theo trạng thái hoặc tìm kiếm
-  const {
-    data: filteredEventsData,
-    isLoading: isFilteredEventsLoading,
-    error: filteredEventsError,
-    refetch: refetchFilteredEvents
-  } = useQuery({
-    queryKey: ['public', 'events', 'filtered', { status: statusFilter, search: searchQuery, page, limit }],
-    queryFn: async () => {
-      if (statusFilter && !searchQuery) {
-        return eventsService.getEventsByStatus(statusFilter, page, limit);
-      }
-      
-      if (searchQuery && !statusFilter) {
-        return eventsService.searchEvents(searchQuery, page, limit);
-      }
-      
-      if (statusFilter && searchQuery) {
-        return eventsService.searchEvents(searchQuery, page, limit);
-      }
-      
-      return eventsService.getPublicEvents(page, limit);
-    },
-    enabled: !!(statusFilter || searchQuery),
+    queryKey: ['public', 'events', { page, limit, status: statusFilter, search: searchQuery }],
+    queryFn: () => eventsService.getPublicEvents({
+      status: statusFilter || undefined,
+      search: searchQuery || undefined,
+      page,
+      limit
+    }),
   });
 
   /**
@@ -58,14 +37,14 @@ export function usePublicEvents() {
   const useEventDetails = (id: string) => {
     return useQuery({
       queryKey: ['public', 'events', 'details', id],
-      queryFn: () => eventsService.getEventById(id),
+      queryFn: () => eventsService.getEvenById(id),
       enabled: !!id,
     });
   };
 
   // Extract pagination and events
-  const pagination = (filteredEventsData || eventsData)?.pagination;
-  const events = (filteredEventsData || eventsData)?.data || [];
+  const pagination = (eventsData)?.pagination;
+  const events = (eventsData)?.data || [];
 
   // Các hàm tiện ích
   const resetFilters = () => {
@@ -76,9 +55,6 @@ export function usePublicEvents() {
 
   const refetchAll = () => {
     refetchEvents();
-    if (statusFilter || searchQuery) {
-      refetchFilteredEvents();
-    }
   };
 
   /**

@@ -107,4 +107,8 @@ export interface DANGKIHIENMAU_WithRelations extends DANGKIHIENMAU {
   DanhMucDVHienMau?: DANHMUCDVMAU;
   PhanHoi?: PHANHOI[];
   GiayChungNhan?: GIAYCHUNGNHAN;
-} 
+}
+
+export interface PHANHOI_WithRelations extends PHANHOI {
+  DangKyHienMau?: DANGKIHIENMAU;
+}

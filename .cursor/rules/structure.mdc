@@ -1,0 +1,103 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+# 📦 Next.js 15 + FFMA Folder Structure Rules
+
+## 🧭 Mục tiêu
+Đảm bảo dự án Next.js 15 có kiến trúc rõ ràng, dễ mở rộng và bảo trì theo mô hình **Feature-based Folder Modular Architecture (FFMA)**.
+
+---
+
+## 📁 Cấu trúc thư mục chuẩn
+
+```
+src/
+├── app/
+│   ├── layout.tsx
+│   └── page.tsx
+│   └── [actor]/
+│       ├── layout.tsx
+│       └── [feature]/
+│           └── page.tsx
+├── features/
+│   └── [actor]/
+│       └── [feature]/
+│           ├── components/
+│           ├── containers/
+│           ├── hooks/
+│           ├── services/
+│           └── types.ts
+├── shared/
+│   ├── components/
+│   ├── hooks/
+│   ├── services/
+│   └── types/
+├── lib/
+├── middleware.ts
+└── styles/
+```
+
+---
+
+## 🔤 Quy ước đặt tên
+
+| Đối tượng        | Cách đặt tên                            | Ví dụ                         |
+|------------------|------------------------------------------|-------------------------------|
+| 📁 Thư mục        | `kebab-case`                             | `user-profile`, `movie-list` |
+| 📄 Component      | `PascalCase.tsx`                         | `UserCard.tsx`               |
+| 📄 Hook           | `camelCase.ts`                           | `useUsers.ts`                |
+| 📄 Service        | `camelCase.ts`                           | `userService.ts`             |
+| 📄 Type           | `PascalCase + suffix` (`Props`, `Data`) | `User`, `UserProps`          |
+| 📄 Container      | `PascalCase.tsx`                         | `UserTableContainer.tsx`     |
+
+---
+
+## 💡 Quy tắc logic phân tầng
+
+| Tầng                | Mô tả                                                                 |
+|---------------------|----------------------------------------------------------------------|
+| `app/`              | Entry point routing + layout Next.js                                 |
+| `features/`         | Toàn bộ logic & UI riêng biệt theo feature và actor                  |
+| `components/`       | UI nhỏ, không chứa logic (pure UI)                                   |
+| `containers/`       | Điều phối dữ liệu, gọi hooks, xử lý interaction                      |
+| `hooks/`            | Giao tiếp API (query/mutation), custom logic                         |
+| `services/`         | Gọi API bằng Axios hoặc Fetch, xử lý raw data                        |
+| `shared/`           | UI, hook, service, type dùng chung nhiều feature                     |
+| `types.ts`          | TypeScript type riêng cho từng feature                               |
+
+---
+
+## 🧪 Ví dụ cụ thể
+
+### 👩‍💼 Trang `admin/users`
+| Thành phần        | Vị trí                                                        |
+|-------------------|---------------------------------------------------------------|
+| Route             | `app/admin/users/page.tsx`                                     |
+| UI components     | `features/admin/users/components/UserTableView.tsx`           |
+| Logic điều phối   | `features/admin/users/containers/UserTableContainer.tsx`      |
+| Hooks             | `features/admin/users/hooks/useUsers.ts`                      |
+| API Service       | `features/admin/users/services/userService.ts`                |
+| Type              | `features/admin/users/types.ts`                               |
+| Shared Axios      | `shared/services/axiosInstance.ts`                            |
+
+---
+
+## ✅ Ưu điểm
+
+- 🚀 Tách biệt UI và logic, dễ test & dễ scale
+- 👥 Dễ chia team theo actor (user/admin/staff)
+- 🧩 Gắn liền với tính năng, dễ đọc - dễ refactor
+- 🌐 Hỗ trợ tốt server/client component trong Next.js 15
+- 🔁 Có thể tách module để publish thành packages nếu cần
+
+---
+
+## 📎 Tips thực chiến
+
+- 🔄 Logic gọi API & state đưa vào `hooks/`
+- 🧠 Không viết logic xử lý trong `components/`, chỉ nhận props
+- 📦 Dữ liệu server (async/await) nên dùng trong container hoặc async component
+- 💬 Khi cần mutation (delete/update), gọi từ container và `refetch`
+

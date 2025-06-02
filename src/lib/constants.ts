@@ -29,3 +29,21 @@ export const BLOOD_DONATION_AGE_RANGE = {
 
 // Thời gian tối thiểu giữa 2 lần hiến máu (ngày)
 export const MIN_DAYS_BETWEEN_DONATIONS = 90; // 3 tháng 
+
+// Cấu trúc response API chuẩn
+export type ApiResponse<T> = {
+  code: number;
+  result: {
+    data: T;
+    pagination?: {
+      currentPage: number;
+      hasNext: boolean;
+      hasPrevious: boolean;
+      perPage: number;
+      total: number;
+      totalPages: number;
+    };
+  };
+};
+
+export type ApiResult<T> = ApiResponse<T>['result'];
