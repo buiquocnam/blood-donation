@@ -24,7 +24,7 @@ interface SidebarItem {
   title: string;
   href: string;
   icon: React.ReactNode;
-  roles: UserRole[];
+  roles: string;
 }
 
 export function Sidebar() {
@@ -42,26 +42,26 @@ export function Sidebar() {
             (user?.MaVaiTro === "ROLE_DIRECTOR") ? "/director/dashboard" :
             (user?.MaVaiTro === "ROLE_ADMIN") ? "/admin/dashboard" : "/dashboard",
       icon: <Home className="h-5 w-5" />,
-      roles: ["ROLE_DONOR", "ROLE_DOCTOR", "ROLE_VOLUNTEER", "ROLE_DIRECTOR", "ROLE_ADMIN"],
+      roles: Object.values(UserRole).join(","),
     },
    
     {
       title: "Lịch sử đăng ký",
       href: "/donor/history/registrations",
       icon: <Calendar className="h-5 w-5" />,
-      roles: ["ROLE_DONOR"],
+      roles: UserRole.ROLE_DONOR,
     },
     {
       title: "Lịch sử hiến máu",
       href: "/donor/history/donations",
       icon: <Clock className="h-5 w-5" />,
-      roles: ["ROLE_DONOR"],
+      roles: UserRole.ROLE_DONOR,
     },
     {
       title: "Giấy chứng nhận",
       href: "/donor/certificates",
       icon: <FileText className="h-5 w-5" />,
-      roles: ["ROLE_DONOR"],
+      roles: UserRole.ROLE_DONOR,
     },
 
     // Nhân viên y tế
@@ -69,13 +69,13 @@ export function Sidebar() {
       title: "Quản lý đơn đăng ký",
       href: "/medical-staff/registrations",
       icon: <Calendar className="h-5 w-5" />,
-      roles: ["ROLE_MEDICAL"],
+      roles: UserRole.ROLE_MEDICAL_STAFF,
     },
     {
       title: "Phản hồi",
       href: "/medical-staff/feedbacks",
       icon: <BellDot className="h-5 w-5" />,
-      roles: ["ROLE_MEDICAL"],
+      roles: UserRole.ROLE_MEDICAL_STAFF,
     },
 
     // Bác sĩ
@@ -83,7 +83,7 @@ export function Sidebar() {
       title: "Quản lý hiến máu",
       href: "/doctor/events",
       icon: <Users className="h-5 w-5" />,
-      roles: ["ROLE_DOCTOR"],
+      roles: UserRole.ROLE_DOCTOR,
     },
 
     // Trưởng cơ sở tình nguyện
@@ -91,13 +91,13 @@ export function Sidebar() {
       title: "Thông báo hiến máu",
       href: "/volunteer-center?tab=announcements",
       icon: <BellDot className="h-5 w-5" />,
-      roles: ["ROLE_VOLUNTEER"],
+      roles: UserRole.ROLE_VOLUNTEER_MANAGER,
     },
     {
       title: "Lịch sử đăng ký",
       href: "/volunteer-center?tab=event-registrations",
       icon: <Calendar className="h-5 w-5" />,
-      roles: ["ROLE_VOLUNTEER"],
+      roles: UserRole.ROLE_VOLUNTEER_MANAGER,
     },
 
     // Giám đốc ngân hàng máu
@@ -105,19 +105,19 @@ export function Sidebar() {
       title: "Quản lý sự kiện",
       href: "/blood-bank/events",
       icon: <Calendar className="h-5 w-5" />,
-      roles: ["ROLE_DIRECTOR"],
+      roles: UserRole.ROLE_BLOOD_DIRECTOR,
     },
     {
       title: "Cơ sở tình nguyện",
       href: "/blood-bank/centers",
       icon: <Building className="h-5 w-5" />,
-      roles: ["ROLE_DIRECTOR"],
+      roles: UserRole.ROLE_BLOOD_DIRECTOR,
     },
     {
       title: "Báo cáo & Thống kê",
       href: "/blood-bank/reports",
       icon: <BarChart3 className="h-5 w-5" />,
-      roles: ["ROLE_DIRECTOR"],
+      roles: UserRole.ROLE_BLOOD_DIRECTOR,
     },
 
     // Admin
@@ -125,31 +125,31 @@ export function Sidebar() {
       title: "Người dùng",
       href: "/admin/users",
       icon: <Users className="h-5 w-5" />,
-      roles: ["ROLE_ADMIN"],
+      roles: UserRole.ROLE_ADMIN,
     },
     {
       title: "Đơn vị máu",
       href: "/admin/blood-units",
       icon: <Droplet className="h-5 w-5" />,
-      roles: ["ROLE_ADMIN"],
+      roles: UserRole.ROLE_ADMIN,
     },
     {
       title: "Báo cáo",
       href: "/admin/reports",
       icon: <BarChart3 className="h-5 w-5" />,
-      roles: ["ROLE_ADMIN"],
+      roles: UserRole.ROLE_ADMIN,
     },
     {
       title: "Cài đặt hệ thống",
       href: "/admin/settings",
       icon: <Settings className="h-5 w-5" />,
-      roles: ["ROLE_ADMIN"],
+      roles: UserRole.ROLE_ADMIN,
     },
     {
       title: "Phân quyền",
       href: "/admin/roles",
       icon: <ShieldCheck className="h-5 w-5" />,
-      roles: ["ROLE_ADMIN"],
+      roles: UserRole.ROLE_ADMIN,
     },
 
     // Hồ sơ cá nhân
@@ -157,7 +157,7 @@ export function Sidebar() {
       title: "Hồ sơ cá nhân",
       href: "/profile",
       icon: <User className="h-5 w-5" />,
-      roles: ["ROLE_DONOR", "ROLE_MEDICAL", "ROLE_DOCTOR", "ROLE_VOLUNTEER", "ROLE_DIRECTOR", "ROLE_ADMIN"],
+      roles: Object.values(UserRole).join(","),
     },
   ];
 
@@ -166,17 +166,17 @@ export function Sidebar() {
     if (!user) return false;
     
     // Xác định vai trò người dùng
-    let userRole: UserRole = "ROLE_DONOR";
+    let userRole: keyof typeof UserRole = UserRole.ROLE_DONOR;
     if (isNguoiDung(user)) {
       // Mặc định người dùng có vai trò DONOR
       const maVaiTro = user.MaVaiTro;
-      userRole = maVaiTro === "ROLE_DONOR" ? "ROLE_DONOR" : 
-                maVaiTro === "ROLE_MEDICAL" ? "ROLE_MEDICAL" : 
-                maVaiTro === "ROLE_DOCTOR" ? "ROLE_DOCTOR" : "ROLE_DONOR";
+      userRole = maVaiTro === UserRole.ROLE_DONOR ? UserRole.ROLE_DONOR : 
+                 maVaiTro === UserRole.ROLE_MEDICAL_STAFF ? UserRole.ROLE_MEDICAL_STAFF : 
+                 maVaiTro === UserRole.ROLE_DOCTOR ? UserRole.ROLE_DOCTOR : UserRole.ROLE_DONOR;
     } else if (isCoSoTinhNguyen(user)) {
       const maVaiTro = user.MaVaiTro;
-      userRole = maVaiTro === "ROLE_VOLUNTEER" ? "ROLE_VOLUNTEER" : 
-                maVaiTro === "ROLE_DIRECTOR" ? "ROLE_DIRECTOR" : "ROLE_VOLUNTEER";
+      userRole = maVaiTro === UserRole.ROLE_VOLUNTEER_MANAGER ? UserRole.ROLE_VOLUNTEER_MANAGER : 
+                 maVaiTro === UserRole.ROLE_BLOOD_DIRECTOR ? UserRole.ROLE_BLOOD_DIRECTOR : UserRole.ROLE_VOLUNTEER_MANAGER;
     }
     
     return item.roles.includes(userRole);

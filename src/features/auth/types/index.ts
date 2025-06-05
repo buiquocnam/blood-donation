@@ -9,13 +9,7 @@ export type AuthUser = (NGUOIDUNG | COSOTINHNGUYEN) & {
   MaVaiTro: string;
 };
 
-export type UserRoleType = 
-  | "ROLE_DONOR"             // Người hiến máu
-  | "ROLE_DOCTOR"            // Bác sĩ
-  | "ROLE_MEDICAL_STAFF"     // Nhân viên duyệt
-  | "ROLE_VOLUNTEER_MANAGER" // Trưởng cơ sở tình nguyện
-  | "ROLE_BLOOD_DIRECTOR"    // Giám đốc ngân hàng máu
-  | "ROLE_ADMIN";            // Quản trị viên
+
 
 export const UserRole = {
   ROLE_DONOR: "ROLE_DONOR" as const,

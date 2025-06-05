@@ -59,6 +59,7 @@ export interface DANGKIHIENMAU {
   NhietDo: number; // NHIETDO in DB (DECIMAL)
   NhipTim: number; // NHIPTIM in DB (INT)
   HuyetAp: string; // HUYETAP in DB
+  // Các trường thông tin sức khỏe
   DaTungHienMau: boolean; // DATUNGHIENMAU in DB (BIT)
   TienSuBenh: string; // TIENSUBENH in DB
   MacBenhHienTai: string; // MACBENHHIENTAI in DB
@@ -107,4 +108,34 @@ export interface DANGKIHIENMAU_WithRelations extends DANGKIHIENMAU {
   DanhMucDVHienMau?: DANHMUCDVMAU;
   PhanHoi?: PHANHOI[];
   GiayChungNhan?: GIAYCHUNGNHAN;
-} 
+}
+
+export interface PHANHOI_WithRelations extends PHANHOI {
+  DangKyHienMau?: DANGKIHIENMAU;
+}
+
+
+export interface DANGKITOCHUCHIENMAU_RESPONSE {
+  IdSuKien: string;
+  IdThongBaoDK: string; 
+  IDCoSoTinhNguyen: string;
+  NgayDangKi: string;
+  TinhTrangDK: string;
+  SoLuongDK: number;
+  SoLuongDDK: number;
+  TrangThaiSuKien: string;
+  NgayDang: string;
+  NgaySua: string | null;
+  HanDK: string;
+  COSOTINHNGUYEN: {
+    IDCoSoTinhNguyen: string;
+    TenCoSoTinhNguyen: string;
+    SDT: string;
+    Email: string;
+    NguoiPhuTrach: string;
+  };
+  THONGBAODKTOCHUC: {
+    TieuDe: string;
+    NoiDung: string;
+  };
+}
