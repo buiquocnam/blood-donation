@@ -7,10 +7,9 @@ const axiosInstance = axios.create({
   },
 });
 
-// Add a request interceptor
+// Request Interceptor: Thêm token xác thực vào header
 axiosInstance.interceptors.request.use(
   (config) => {
-    // Thêm token vào header nếu có
     const token = localStorage.getItem('auth_token');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
@@ -22,34 +21,34 @@ axiosInstance.interceptors.request.use(
   }
 );
 
-// Add a response interceptor
+// Response Interceptor: Xử lý refresh token khi token hết hạn
 axiosInstance.interceptors.response.use(
   (response) => response,
   async (error) => {
     const originalRequest = error.config;
 
-    // Nếu token hết hạn và chưa thử refresh
+    // Kiểm tra nếu lỗi 401 (Unauthorized) và chưa thử refresh token
     if (error.response?.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true;
 
       try {
-        // Gọi API refresh token
+        // Thực hiện refresh token
         const refreshToken = localStorage.getItem('refresh_token');
         const response = await axios.post('/api/auth/refresh', { refreshToken });
         
-        // Lưu token mới
+        // Lưu token mới vào localStorage
         const { accessToken } = response.data;
-        localStorage.setItem('accessToken', accessToken);
+        localStorage.setItem('auth_token', accessToken);
         
-        // Gửi lại request cũ với token mới
+        // Cập nhật token trong header và gửi lại request ban đầu
         originalRequest.headers.Authorization = `Bearer ${accessToken}`;
         return axiosInstance(originalRequest);
-      } catch (error) {
-        // Nếu refresh token cũng hết hạn, logout
+      } catch (refreshError) {
+        // Xử lý khi refresh token thất bại
         localStorage.removeItem('auth_token');
         localStorage.removeItem('refresh_token');
         window.location.href = '/auth/login';
-        return Promise.reject(error);
+        return Promise.reject(refreshError);
       }
     }
 
