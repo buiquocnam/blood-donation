@@ -14,7 +14,7 @@ import { AuthService } from "@/features/auth/services/auth-service";
 import { toast } from "sonner";
 import { mockNhomMau } from "@/mock/users";
 import { THANHPHO, QUAN, PHUONG } from "@/types/location";
-import { locationService } from "@/features/public/services";
+import { locationService } from "@/shared/services/locationService";
 import { useRouter } from "next/navigation";
 import React from "react";
 
@@ -101,7 +101,7 @@ function UserRegisterFormComponent({ onSuccess, initialCities = [] }: UserRegist
 
       setIsLoading(prev => ({ ...prev, districts: true }));
       try {
-        const districtsData = await locationService.getDistrictsByCity(selectedCity);
+        const districtsData = await locationService.getDistricts(selectedCity);
         setAvailableDistricts(districtsData);
         setSelectedDistrict("");
         setAvailableWards([]);
@@ -128,7 +128,7 @@ function UserRegisterFormComponent({ onSuccess, initialCities = [] }: UserRegist
 
       setIsLoading(prev => ({ ...prev, wards: true }));
       try {
-        const wardsData = await locationService.getWardsByDistrict(selectedDistrict);
+        const wardsData = await locationService.getWards(selectedDistrict);
         setAvailableWards(wardsData);
         setValue("IdPhuong", "");
       } catch (error) {

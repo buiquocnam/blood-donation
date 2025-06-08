@@ -1,10 +1,11 @@
 'use client';
 
 import { EventsList } from '@/components/event/EventsList';
-import { usePublicEvents } from '@/features/public/hooks/usePublicEvents';
+import { useEvents } from '@/shared/hooks/useEvents';
 import { EventsListContainerProps } from '../../feedbacks/types';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Pagination } from '@/components/ui/pagination';
+import { DANGKITOCHUCHIENMAU_WithRelations } from '@/types';
 
 export const EventsListContainer = ({ onEventSelect }: EventsListContainerProps) => {
   const {
@@ -16,7 +17,7 @@ export const EventsListContainer = ({ onEventSelect }: EventsListContainerProps)
     setStatusFilter,
     goToPage,
     changeLimit
-  } = usePublicEvents();
+  } = useEvents();
 
   if (error) {
     return (
@@ -33,10 +34,10 @@ export const EventsListContainer = ({ onEventSelect }: EventsListContainerProps)
       </CardHeader>
       <CardContent className="space-y-6 p-0">
         <EventsList
-          events={events}
+          events={events as DANGKITOCHUCHIENMAU_WithRelations[]}
           isLoading={isLoading}
           onSearch={setSearchQuery}
-          onFilterStatus={setStatusFilter}
+          onFilterStatus={(status) => setStatusFilter(status || undefined)}
           role="staff"
         />
 

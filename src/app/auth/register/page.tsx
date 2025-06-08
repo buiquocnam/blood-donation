@@ -1,7 +1,6 @@
 // page.tsx (Server Component - for SEO and layout)
 import { ClientTabContent } from './client-tabs';
-import { locationService } from '@/features/public/services';
-import { THANHPHO } from '@/types/location';
+import { locationService } from '@/shared/services/locationService';
 
 export const metadata = {
   title: 'Đăng ký | Hệ thống hiến máu',
@@ -25,5 +24,5 @@ export default async function RegisterPage() {
   const { cities } = await fetchInitialData();
   
   // Render client component với dữ liệu cities từ server
-  return <ClientTabContent initialCities={cities} />;
+  return <ClientTabContent initialCities={cities || []} />;
 } 

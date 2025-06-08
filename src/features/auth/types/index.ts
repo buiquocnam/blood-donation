@@ -1,15 +1,10 @@
 import { NGUOIDUNG, COSOTINHNGUYEN } from "@/types";
-/**
- * State quản lý xác thực người dùng
- */
 
 export type AuthUser = (NGUOIDUNG | COSOTINHNGUYEN) & {
   token?: string;
   refreshToken?: string;
   MaVaiTro: string;
 };
-
-
 
 export const UserRole = {
   ROLE_DONOR: "ROLE_DONOR" as const,
@@ -18,66 +13,24 @@ export const UserRole = {
   ROLE_VOLUNTEER_MANAGER: "ROLE_VOLUNTEER_MANAGER" as const,
   ROLE_BLOOD_DIRECTOR: "ROLE_BLOOD_DIRECTOR" as const,
   ROLE_ADMIN: "ROLE_ADMIN" as const
-};
+} as const;
 
 export interface AuthState {
   user: AuthUser | null;
-  isAuthenticated: boolean; // đã xác thực hay chưa
-  isLoading: boolean; // đang tải
-
-  /**
-   * Đăng nhập người dùng
-   * @param credentials Thông tin đăng nhập
-   * @returns Dữ liệu người dùng sau khi đăng nhập thành công
-   */
+  isAuthenticated: boolean;
+  isLoading: boolean;
   login: (credentials: LoginCredentials) => Promise<AuthUser>;
-  
-  /**
-   * Đăng xuất người dùng
-   */
   logout: () => void;
-  
-  /**
-   * Đăng ký người dùng thông thường
-   * @param userData Thông tin đăng ký
-   * @returns Dữ liệu người dùng sau khi đăng ký thành công
-   */
   register: (userData: RegisterData) => Promise<NGUOIDUNG>;
-  
-  /**
-   * Đăng ký cơ sở tình nguyện
-   * @param data Thông tin đăng ký
-   * @returns Dữ liệu cơ sở sau khi đăng ký thành công
-   */
   registerVolunteerCenter: (data: VolunteerCenterRegisterData) => Promise<COSOTINHNGUYEN>;
 }
 
-/**
- * Thông tin đăng nhập
- */
 export interface LoginCredentials {
-  /**
-   * Email hoặc tên đăng nhập. Đây là trường dùng để đăng nhập.
-   * Có thể là email của người hiến máu hoặc người dùng khác,
-   * hoặc username của cơ sở tình nguyện.
-   */
   Email: string;
-  
-  /**
-   * Mật khẩu đăng nhập
-   */
   MatKhau: string;
-  
-  /**
-   * Đánh dấu đăng nhập của cơ sở tình nguyện (true) 
-   * hoặc người dùng thông thường (false)
-   */
   isCenter: boolean;
 }
 
-/**
- * Dữ liệu đăng ký cho người dùng thông thường (người hiến máu)
- */
 export interface RegisterData {
   HoTen: string;
   Email: string;
@@ -89,13 +42,10 @@ export interface RegisterData {
   CCCD: string;
   MaNhomMau?: string;
   tenDiaChi: string;
-  IdPhuong: string; 
+  IdPhuong: string;
   MaVaiTro: string;
 }
 
-/**
- * Dữ liệu đăng ký cho trưởng cơ sở tình nguyện
- */
 export interface VolunteerCenterRegisterData {
   TenCoSoTinhNguyen: string;
   DiaChi: string;
@@ -104,7 +54,7 @@ export interface VolunteerCenterRegisterData {
   Email: string;
   SDT: string;
   UserName: string;
-  NguoiPhuTrach: string; // Tên người phụ trách
+  NguoiPhuTrach: string;
   MatKhau: string;
   XacNhanMatKhau: string;
   MaVaiTro: string;

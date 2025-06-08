@@ -11,7 +11,7 @@ import { VolunteerCenterRegisterFormData, volunteerCenterRegisterSchema } from "
 import { useAuthStore } from "@/features/auth/store/auth-store";
 import { AuthService } from "@/features/auth/services/auth-service";
 import { toast } from "sonner";
-import { locationService } from "@/features/public/services";
+import { locationService } from "@/shared/services/locationService";
 import { THANHPHO, QUAN, PHUONG } from "@/types/location";
 import { useRouter } from "next/navigation";
 
@@ -98,7 +98,7 @@ export function VolunteerCenterRegisterForm({ onSuccess, initialCities = [] }: V
 
       setIsLoading(prev => ({ ...prev, districts: true }));
       try {
-        const districtsData = await locationService.getDistrictsByCity(selectedCity);
+        const districtsData = await locationService.getDistricts(selectedCity);
         setAvailableDistricts(districtsData);
         setSelectedDistrict("");
         setAvailableWards([]);
@@ -125,7 +125,7 @@ export function VolunteerCenterRegisterForm({ onSuccess, initialCities = [] }: V
 
       setIsLoading(prev => ({ ...prev, wards: true }));
       try {
-        const wardsData = await locationService.getWardsByDistrict(selectedDistrict);
+        const wardsData = await locationService.getWards(selectedDistrict);
         setAvailableWards(wardsData);
         setValue("IdPhuong", "");
       } catch (error) {

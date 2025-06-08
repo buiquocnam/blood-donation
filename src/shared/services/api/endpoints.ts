@@ -40,8 +40,8 @@ export const FEEDBACK_ENDPOINTS = {
 
 // Location endpoints
 export const LOCATION_ENDPOINTS = {
-  PROVINCES: '/locations/provinces',
-  DISTRICTS: (provinceId: string) => `/locations/provinces/${provinceId}/districts`,
+  CITIES: '/locations/cities',
+  DISTRICTS: (cityId: string) => `/locations/cities/${cityId}/districts`,
   WARDS: (districtId: string) => `/locations/districts/${districtId}/wards`,
 } as const;
 
